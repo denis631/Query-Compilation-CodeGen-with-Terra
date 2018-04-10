@@ -5,32 +5,43 @@ C = terralib.includecstring [[
     #include <stdlib.h>
 ]]
 
-function projectionConsume()
-    return terra(a : int)
-        C.printf("%d\n", a)
-    end
+-- Abstract class - Operator
+Operator = {}
+
+function Operator:new()        -- constructor of instance
+   self.__index = self
+   return setmetatable({}, self)
 end
 
-function projectionProduce()
-    return selectionProduce()
+function Operator:newChildClass()  -- constructor of subclass
+    self.__index = self
+    return setmetatable({
+        parentClass = self,
+    }, self)
+ end
+
+function Operator:prepare()
+    self.child:prepare(self)
 end
 
-function selectionConsume()
-    local consumerCode = projectionConsume()
+ -- abstract methods
+function Operator:produce() end
+function Operator:consume() end 
 
-    return terra(a : int)
-        if a % 2 == 0 then
-            consumerCode(a)
-        end
-    end
+ -- TableScan
+TableScan = Operator:newChildClass()
+
+function TableScan:new()
+    local t = TableScan.parentClass.new(self)
+    return t
 end
 
-function selectionProduce()
-    return tableScanProduce()
+function TableScan:prepare(parent)
+    self.parent = parent
 end
 
-function tableScanProduce()
-    local consumerCode = selectionConsume()
+function TableScan:produce()
+    local consumerCode = self.parent:consume()
 
     return terra(data : &int, N: int)
         for i = 0, N do
@@ -38,6 +49,27 @@ function tableScanProduce()
         end
     end
 end
+
+-- Projection
+Projection = Operator:newChildClass()
+
+function Projection:new(child)
+    local p = Projection.parentClass.new(self)
+    p.child = child
+    return p
+end
+
+function Projection:produce()
+    return self.child:produce()
+end
+
+function Projection:consume()
+    -- we can pass the type in the consume function and have a terra function with the passed type. 
+    return terra(a : int)
+        C.printf("%d\n", a)
+    end
+end
+--
 
 init = terra()
     var d = [&int](C.malloc(sizeof(int) * 10))
@@ -51,6 +83,9 @@ end
 
 data = init()
 
-query = projectionProduce()
-query(data, 10)
-print(query)
+local query = Projection:new(TableScan:new())
+query:prepare()
+code = query:produce()
+
+print(code)
+code(data, 10)
