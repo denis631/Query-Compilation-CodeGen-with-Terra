@@ -16,7 +16,7 @@ end
 function Operator:newChildClass()  -- constructor of subclass
     self.__index = self
     return setmetatable({
-        parentClass = self,
+        parentClass = self
     }, self)
  end
 
@@ -31,21 +31,34 @@ function Operator:consume() end
  -- TableScan
 TableScan = Operator:newChildClass()
 
-function TableScan:new(attrType, attrName, tupleType)
+function TableScan:new(tupleType)
     local t = TableScan.parentClass.new(self)
-    t.attrType = attrType
-    t.attrName = attrName
     t.tupleType = tupleType
     return t
 end
 
 function TableScan:prepare(parent)
     self.parent = parent
+
+    self.attrTypes = {}
+    self.attrNames = {}
+    
+    -- getting the IUs to produce
+    for attrName, attrType in pairs(parent.requiredIUs) do
+        -- TODO: remove this code, when more than one type can be used
+        self.attrType = attrType
+        self.attrName = attrName
+        
+        table.insert(self.attrNames, attrName)
+        table.insert(self.attrTypes, attrType)
+    end
 end
 
 function TableScan:produce()
-    -- find type for attribute? -> need to know tables -> can generate IUs dynamically on demand!
-    local consumerCode = self.parent:consume(self.attrType)
+    -- generating consumer code, while also telling which attributes are going to be used, 
+    -- so that terra function can be generated
+    -- TODO: generate an exotype (aka new type/struct on the flight)
+    local consumerCode = self.parent:consume(self.attrTypes)
 
     return terra(data : &(self.tupleType), N : int)
         for i = 0, N do
@@ -59,9 +72,10 @@ end
 -- Projection
 Projection = Operator:newChildClass()
 
-function Projection:new(child)
+function Projection:new(child, requiredIUs)
     local p = Projection.parentClass.new(self)
     p.child = child
+    p.requiredIUs = requiredIUs
     return p
 end
 
@@ -69,10 +83,26 @@ function Projection:produce()
     return self.child:produce()
 end
 
-function Projection:consume(attrType)
-    -- we can pass the type in the consume function and have a terra function with the passed type. 
-    return terra(a : attrType)
-        C.printf("%d\n", a)
+function Projection:consume(attrTypes)
+    local formatString = "| "
+
+    for _,attrType in ipairs(attrTypes) do
+        -- add more cases for other types if needed, strings, dates, doubles, etc.
+        if attrType ==  int then
+            formatString = formatString .. "%d | "
+        elseif attrType == double then
+            formatString = formatString .. "%f | "
+        elseif attrType == rawstring then
+            formatString = formatString .. "%s | "
+        end
+    end
+
+    formatString = formatString .. "\n"
+
+    print(formatString)
+
+    return terra(a: attrTypes)
+        C.printf(formatString, a)
     end
 end
 --
@@ -88,6 +118,7 @@ init = terra()
 
     for i = 0, 2 do
         u[i].id = i
+        u[i].name = "TEST"
     end
 
     return u
@@ -101,9 +132,9 @@ data = init()
 -- Map tableName -> type?
 -- HashMap of tables? Datastore struct with different tables?
 
-local query = Projection:new(TableScan:new(int, "id", User))
+local query = Projection:new(TableScan:new(User), { ["name"] = rawstring })
 query:prepare()
 code = query:produce()
 
-print(code)
+code:printpretty()
 code(data, 2)
