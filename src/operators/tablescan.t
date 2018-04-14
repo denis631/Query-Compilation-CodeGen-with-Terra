@@ -7,17 +7,14 @@ function TableScan:new(tableName)
     return t
 end
 
-function TableScan:prepare(parent)
-    self.parent = parent
-
-    self.attrTypes = {}
+function TableScan:prepare(consumer)
+    self.consumer = consumer
     self.attrNames = {}
     
     -- getting the IUs to produce
-    for _, iu in ipairs(parent.requiredIUs) do
+    for _, iu in ipairs(consumer.requiredIUs) do
         for attrName, attrType in pairs(iu) do
             table.insert(self.attrNames, attrName)
-            table.insert(self.attrTypes, attrType)
         end
     end
 end
@@ -35,8 +32,8 @@ function TableScan:getAttributes()
 end
 
 function TableScan:produce()
-    -- generating consumer code, while also telling which attributes are going to be used, so that terra function can be generated
-    local consumerCode = self.parent:consume(self.attrTypes)
+    -- generating consumer code
+    local consumerCode = self.consumer:consume()
     local getAttributesFrom = self:getAttributes()
 
     return terra(datastore : &Datastore)
