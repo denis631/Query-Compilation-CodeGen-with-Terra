@@ -51,14 +51,19 @@ function getKeysSortedByValue(tbl, sortFunction)
     return keys
 end
 
-function castIfNecessary(value)
-    -- Use entries field for smart cast? We know the type we want to cast, but it's a terra type. 
-    -- User.entries[index]["field"]
-    local num = tonumber(value)
-    if num ~= nil then
-        return num
+function castIfNecessary(fieldType, value)
+    if fieldType == Integer or fieldType == Timestamp then
+        return tonumber(value)
     else
         return value
+    end
+end
+
+function findFieldTypeForNameInEntries(fieldName, entries)
+    for _,tuple in ipairs(entries) do
+        if tuple["field"] == fieldName then
+            return tuple["type"]
+        end
     end
 end
 
@@ -82,11 +87,12 @@ function parse(path, class, propertyName)
 
         for i,tuple in ipairs(csvRows) do
             for index, attr in pairs(csvRows[i]) do
-                -- cast if possible, since all data read are strings
-                attr = castIfNecessary(attr)
+                -- find the field type of attribute to be set
+                local fieldType = findFieldTypeForNameInEntries(attrs[index], class.entries)
+                -- cast if necessary, since all data read are strings
+                attr = castIfNecessary(fieldType, attr)
 
                 -- assign the property to element in array at index i-1; lua-indices start at 1
-                print(attr)
                 l:insert(quote
                     -- call init method in order to initialize the property
                     datastore.[propertyName][i-1].[attrs[index]]:init(attr)

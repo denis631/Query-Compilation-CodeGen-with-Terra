@@ -10,7 +10,8 @@ require 'operators.tablescan'
 require 'operators.projection'
 
 loadDatastore = loadDatastore({
-    {'../data/users.csv', Customer, "customers"}
+    -- getting not enough memory when loading tpcc_customer.tbl
+    {'../data/tpcc_customer.tbl', Customer, "customers"}
 })
 print(loadDatastore)
 
