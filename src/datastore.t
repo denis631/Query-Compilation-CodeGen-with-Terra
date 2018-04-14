@@ -37,36 +37,36 @@ function castIfNecessary(value)
 end
 
 function parse(path, class, propertyName)
-    local tab = load(path, ',')
-    local attrs = getKeysSortedByValue(getmetatable(tab), function(a, b) return a < b end)
-    local tableCount = table.getn(tab)
+    local csvRows = load(path, ',')
+    local attrs = getKeysSortedByValue(getmetatable(csvRows), function(a, b) return a < b end)
+    local csvRowsCount = table.getn(csvRows)
 
     return macro(function(datastore)
         local l = terralib.newlist()
 
         -- set the count of the users array
         l:insert(quote
-            datastore.[propertyName .. "Count"] = tableCount 
+            datastore.[propertyName .. "Count"] = csvRowsCount 
         end)
 
-        -- allocate users array and save the symbol, since this is the value, which we are going to return
-        local dataArray = symbol(&class)
+        -- allocate users array
         l:insert(quote 
-            var [dataArray] = [&class](C.malloc(sizeof(class) * tableCount))
+            datastore.[propertyName] = [&class](C.malloc(sizeof(class) * csvRowsCount))
         end)
 
-        for i,tuple in ipairs(tab) do
-            for index, attr in pairs(tab[i]) do
+        for i,tuple in ipairs(csvRows) do
+            for index, attr in pairs(csvRows[i]) do
                 -- cast if possible, since all data read are strings
                 attr = castIfNecessary(attr)
 
+                -- assign the property to element in array at index i-1; lua-indices start at 1
                 l:insert(quote
-                    [dataArray][i-1].[attrs[index]] = attr
+                    datastore.[propertyName][i-1].[attrs[index]] = attr
                 end)
             end
         end
         
-        return quote [l] in [dataArray] end
+        return quote [l] end
     end)
 end
 
@@ -84,7 +84,7 @@ function loadDatastore(parseParams)
         local attr = params[3]
 
         stmts:insert(quote
-            [datastore].[attr] = [parse(path, class, attr)]([datastore])
+            [parse(path, class, attr)]([datastore])
         end)
     end
 
