@@ -1,12 +1,18 @@
 C = terralib.includecstring [[
     #include <stdio.h>
     #include <stdlib.h>
+    #include <string.h>
 ]]
 
 require 'datastore'
 require 'operators.operator'
 require 'operators.tablescan'
 require 'operators.projection'
+
+loadDatastore = loadDatastore({
+    {'../data/users.csv', User, "users"}
+})
+print(loadDatastore)
 
 datastore = loadDatastore()
 
