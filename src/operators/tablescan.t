@@ -7,12 +7,12 @@ function TableScan:new(tableName)
     return t
 end
 
-function TableScan:prepare(consumer)
+function TableScan:prepare(requiredIUs, consumer)
     self.consumer = consumer
     self.attrNames = {}
     
     -- getting the IUs to produce
-    for _, iu in ipairs(consumer.requiredIUs) do
+    for _, iu in ipairs(requiredIUs) do
         for attrName, attrType in pairs(iu) do
             table.insert(self.attrNames, attrName)
         end

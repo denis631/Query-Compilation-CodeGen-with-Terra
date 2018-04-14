@@ -17,7 +17,7 @@ function Projection:prepare()
         end
     end
 
-    self.child:prepare(self)
+    self.child:prepare(self.requiredIUs, self)
 end
 
 function Projection:produce()
