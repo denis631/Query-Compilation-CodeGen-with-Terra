@@ -43,11 +43,11 @@ function getKeysSortedByValue(tbl, sortFunction)
     for key in pairs(tbl) do
         table.insert(keys, key)
     end
-  
+
     table.sort(keys, function(a, b)
       return sortFunction(tbl[a], tbl[b])
     end)
-  
+
     return keys
 end
 
@@ -77,11 +77,11 @@ function parse(path, class, propertyName)
 
         -- set the count of the users array
         l:insert(quote
-            datastore.[propertyName .. "Count"] = csvRowsCount 
+            datastore.[propertyName .. "Count"] = csvRowsCount
         end)
 
         -- allocate users array
-        l:insert(quote 
+        l:insert(quote
             datastore.[propertyName] = [&class](C.malloc(sizeof(class) * csvRowsCount))
         end)
 
@@ -99,7 +99,7 @@ function parse(path, class, propertyName)
                 end)
             end
         end
-        
+
         return quote [l] end
     end)
 end
@@ -122,7 +122,7 @@ function loadDatastore(parseParams)
         end)
     end
 
-    return terra() 
+    return terra()
         [stmts]
         return [datastore]
     end

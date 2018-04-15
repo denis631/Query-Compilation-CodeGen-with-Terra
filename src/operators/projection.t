@@ -26,12 +26,14 @@ end
 
 function createFormatString(attrTypes)
     local function formatForType(type)
-        -- TODO: add more cases for other types if needed, strings, dates, doubles, etc.
-        if type ==  int then
+        -- TODO: do no casting on the type side, but rather on the value side. Print only strings, therefore convert the values to strings for printing
+        print("Type is")
+        print(type)
+        if type ==  Integer then
             return "%d"
-        elseif type == double then
+        elseif type == Numeric then
             return "%f"
-        elseif type == rawstring then
+        else
             return "%s"
         end
     end
@@ -49,7 +51,7 @@ function Projection:consume()
     local formatString = createFormatString(self.attrTypes)
 
     return macro(function(attributes)
-        return quote 
+        return quote
             C.printf(formatString, attributes)
         end
     end)

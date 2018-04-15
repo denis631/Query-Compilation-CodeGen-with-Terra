@@ -13,9 +13,19 @@ loadDatastore = loadDatastore({
     -- getting not enough memory when loading tpcc_customer.tbl
     {'../data/tpcc_customer.tbl', Customer, "customers"}
 })
-print(loadDatastore)
+-- print(loadDatastore)
 
--- datastore = loadDatastore()
+datastore = loadDatastore()
+
+query = Projection:new(TableScan:new("customers"), {
+                           { ["c_id"] = findFieldTypeForNameInEntries("c_id", Customer.entries) },
+                           -- { ["c_first"] = findFieldTypeForNameInEntries("c_first", Customer.entries) }
+})
+query:prepare()
+code = query:produce()
+
+print(code)
+code(datastore)
 
 -- -- TODO: do an table in table, so that the order won't be random, because of the key hash position
 -- local query = Projection:new(TableScan:new("users"), { 

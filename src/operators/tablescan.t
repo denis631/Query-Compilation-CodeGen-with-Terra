@@ -10,7 +10,7 @@ end
 function TableScan:prepare(requiredIUs, consumer)
     self.consumer = consumer
     self.attrNames = {}
-    
+
     -- getting the IUs to produce
     for _, iu in ipairs(requiredIUs) do
         for attrName, attrType in pairs(iu) do
@@ -26,7 +26,7 @@ function TableScan:getAttributes()
         for _,attribute in pairs(self.attrNames) do
             attributes:insert(quote in table.[attribute] end)
         end
-    
+
         return quote in [attributes] end
     end)
 end
