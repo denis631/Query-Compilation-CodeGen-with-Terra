@@ -3,6 +3,7 @@ Projection = Operator:newChildClass()
 
 function Projection:new(child, requiredIUs)
     local p = Projection.parentClass.new(self)
+    p.__type = Projection
     p.child = child
     p.requiredIUs = requiredIUs
     return p
@@ -25,23 +26,10 @@ function Projection:produce()
 end
 
 function createFormatString(attrTypes)
-    local function formatForType(type)
-        -- TODO: do no casting on the type side, but rather on the value side. Print only strings, therefore convert the values to strings for printing
-        print("Type is")
-        print(type)
-        if type ==  Integer then
-            return "%d"
-        elseif type == Numeric then
-            return "%f"
-        else
-            return "%s"
-        end
-    end
-
     local formatString = "| "
 
     for _,attrType in ipairs(attrTypes) do
-        formatString = formatString .. formatForType(attrType) .. " | "
+        formatString = formatString .. "%s | "
     end
 
     return formatString .. "\n"

@@ -10,5 +10,9 @@ function Char(N)
         self.length = C.strnlen(self.value, N);
     end
 
+    terra CharT:toString()
+        return self.value
+    end
+
     return CharT
 end

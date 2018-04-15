@@ -38,19 +38,6 @@ struct Datastore {
 
 -- TODO: Define structs on the flight while parsing csv?
 
-function getKeysSortedByValue(tbl, sortFunction)
-    local keys = {}
-    for key in pairs(tbl) do
-        table.insert(keys, key)
-    end
-
-    table.sort(keys, function(a, b)
-      return sortFunction(tbl[a], tbl[b])
-    end)
-
-    return keys
-end
-
 function castIfNecessary(fieldType, value)
     if fieldType == Integer or fieldType == Timestamp then
         return tonumber(value)
@@ -69,7 +56,6 @@ end
 
 function parse(path, class, propertyName)
     local csvRows = load(path, '|')
-    local attrs = getKeysSortedByValue(getmetatable(csvRows), function(a, b) return a < b end)
     local csvRowsCount = table.getn(csvRows)
 
     return macro(function(datastore)
@@ -88,14 +74,16 @@ function parse(path, class, propertyName)
         for i,tuple in ipairs(csvRows) do
             for index, attr in pairs(csvRows[i]) do
                 -- find the field type of attribute to be set
-                local fieldType = findFieldTypeForNameInEntries(attrs[index], class.entries)
+                local fieldName = class.entries[index]["field"]
+                local fieldType = class.entries[index]["type"]
+
                 -- cast if necessary, since all data read are strings
                 attr = castIfNecessary(fieldType, attr)
 
                 -- assign the property to element in array at index i-1; lua-indices start at 1
                 l:insert(quote
                     -- call init method in order to initialize the property
-                    datastore.[propertyName][i-1].[attrs[index]]:init(attr)
+                    datastore.[propertyName][i-1].[fieldName]:init(attr)
                 end)
             end
         end

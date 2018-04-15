@@ -10,5 +10,9 @@ function Varchar(N)
         self.length = C.strnlen(value, N);
     end
 
+    terra VarcharT:toString()
+        return self.value
+    end
+
     return VarcharT
 end
