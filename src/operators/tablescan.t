@@ -24,14 +24,7 @@ function TableScan:getAttributes()
         local attributes = terralib:newlist()
 
         for _,attribute in pairs(self.attrNames) do
-            if self.consumer.__type == Projection then
-                -- generate strings if the consumer is projection, so that we can just print the strings
-                -- cast to [&int8] aka char* so that printf works as expected
-                attributes:insert(quote in [&int8](table.[attribute]:toString()) end)
-            else
-                -- if consumer is not projection, then pass the attribute as it is
-                attributes:insert(quote in table.[attribute] end)
-            end
+          attributes:insert(quote in table.[attribute] end)
         end
 
         return quote in [attributes] end

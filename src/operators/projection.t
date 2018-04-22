@@ -35,12 +35,37 @@ function createFormatString(attrTypes)
     return formatString .. "\n"
 end
 
+function removeFirstHalf(list)
+  local res = terralib:newlist()
+
+  for i = 1,(#list)/2 do
+    res:remove(1)
+  end
+
+  return res
+end
+
+function stringAttributes(N)
+  return macro(function(attributes)
+      local stringAttributes = terralib:newlist()
+
+      for i = 0,N-1 do
+        stringAttributes:insert(quote in [&int8](attributes.["_"..i]:toString()) end)
+      end
+
+      -- First half of the list is implicitly filled with passed arguments, this is why we remove it
+      return quote in [removeFirstHalf(stringAttributes)] end
+  end)
+end
+
 function Projection:consume()
     local formatString = createFormatString(self.attrTypes)
+    local stringify = stringAttributes(#self.attrTypes)
 
     return macro(function(attributes)
         return quote
-            C.printf(formatString, attributes)
+            var stringAttrs = stringify(attributes)
+            C.printf(formatString, stringAttrs)
         end
     end)
 end
