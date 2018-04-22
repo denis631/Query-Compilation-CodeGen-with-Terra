@@ -24,14 +24,31 @@ function Selection:prepare(requiredIUs, consumer)
     self.child:prepare(requiredIUs, self)
 end
 
-predicateCode = macro(function(condition)
-    local N = 1
+predicateCode = macro(function(predicates, attributes)
+    -- TODO: create a function which return a macro. But before creating a macro, this function creates labels for accessing the properties
+    local predicateEval = terralib:newlist()
+    local predicateStatus = symbol(bool)
 
-    -- for i = 0,N do
+    -- the attributes (in this case c_id and c_first) are implicitly copied. We remove them, for the code to work
+    predicateEval:remove(1)
+    predicateEval:remove(1)
 
-    -- end
-    
-    return `condition.["_0"] == condition._1 and 1 == 1
+    predicateEval:insert(quote var [predicateStatus] = true end)
+
+    local i = 0
+    local N = 2
+    while i < N do
+      predicateEval:insert(quote
+          var attr = attributes.["_"..i]
+          var const = predicates.["_"..(i+1)]
+
+          [predicateStatus] = [predicateStatus] and attr:equal(const)
+      end)
+
+      i = i + 2
+    end
+
+    return quote [predicateEval] in [predicateStatus] end
 end)
 
 function Selection:produce(tupleType)
@@ -43,11 +60,8 @@ function Selection:consume()
     local consumerCode = self.consumer:consume()
 
     return macro(function(attributes)
-        return quote 
-            -- destructuring in a nutshell
-            var x = attributes._0
-
-            if predicateCode({x, 1}) then 
+        return quote
+            if predicateCode({ self.predicates }, attributes) then
                 consumerCode(attributes)
             end
         end
