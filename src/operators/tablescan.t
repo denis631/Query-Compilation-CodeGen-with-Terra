@@ -24,12 +24,12 @@ function TableScan:getAttributes()
         local attributes = terralib:newlist()
 
         for _,attribute in pairs(self.attrNames) do
-          attributes:insert(quote in table.[attribute] end)
-          -- attributes:insert(quote in { [attribute] = table.[attribute] } end)
+          -- attributes:insert(quote in table.[attribute] end)
+          attributes:insert(quote in { [attribute] = table.[attribute] } end)
         end
 
-        return quote in [attributes] end
-        -- return quote in { [attributes] } end
+        -- return quote in [attributes] end
+        return quote in { [attributes] } end
     end)
 end
 

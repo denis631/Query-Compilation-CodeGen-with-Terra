@@ -11,10 +11,12 @@ end
 
 function Projection:prepare()
     self.attrTypes = {}
+    self.attrNames = {}
 
     for _, iu in ipairs(self.requiredIUs) do
         for attrName, attrType in pairs(iu) do
             table.insert(self.attrTypes, attrType)
+            table.insert(self.attrNames, attrName)
         end
     end
 
@@ -45,12 +47,13 @@ function removeFirstHalf(list)
   return res
 end
 
-function stringAttributes(N)
+function Projection:stringAttributes()
   return macro(function(attributes)
       local stringAttributes = terralib:newlist()
 
-      for i = 0,N-1 do
-        stringAttributes:insert(quote in [&int8](attributes.["_"..i]:toString()) end)
+      for i = 0,(#self.attrNames - 1) do
+          local attrName = self.attrNames[i+1]
+          stringAttributes:insert(quote in [&int8](attributes.["_"..i].[attrName]:toString()) end)
       end
 
       -- First half of the list is implicitly filled with passed arguments, this is why we remove it
@@ -60,7 +63,7 @@ end
 
 function Projection:consume()
     local formatString = createFormatString(self.attrTypes)
-    local stringify = stringAttributes(#self.attrTypes)
+    local stringify = self:stringAttributes()
 
     return macro(function(attributes)
         return quote

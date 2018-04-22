@@ -14,7 +14,7 @@ function Selection:prepare(requiredIUs, consumer)
 
     local requiredIUs = requiredIUs
 
-    -- add new required ius because of ius that are used by the if predicate
+    -- TODO: add new required ius because of ius that are used by the if predicate
     -- for key, value in pairs(requiredIUs) do
     --     if !contains(requiredIUs, key) then
     --         table.insert(requiredIUs, { key = value })
@@ -24,32 +24,46 @@ function Selection:prepare(requiredIUs, consumer)
     self.child:prepare(requiredIUs, self)
 end
 
-predicateCode = macro(function(predicates, attributes)
-    -- TODO: create a function which return a macro. But before creating a macro, this function creates labels for accessing the properties
-    local predicateEval = terralib:newlist()
-    local predicateStatus = symbol(bool)
+function Selection:predicate(predicates)
+  local attrNames = {}
+  local consts = {}
 
-    -- the attributes (in this case c_id and c_first) are implicitly copied. We remove them, for the code to work
-    predicateEval:remove(1)
-    predicateEval:remove(1)
+  local N = #self.requiredIUs
 
-    predicateEval:insert(quote var [predicateStatus] = true end)
-
-    local i = 0
-    local N = 2
-    while i < N do
-      predicateEval:insert(quote
-          var attr = attributes.["_"..i]
-          var const = predicates.["_"..(i+1)]
-
-          [predicateStatus] = [predicateStatus] and attr:equal(const)
-      end)
-
-      i = i + 2
+  for _, predicatePair in ipairs(predicates) do
+    for attrName, const in pairs(predicatePair) do
+      table.insert(attrNames, attrName)
+      table.insert(consts, const)
     end
+  end
 
-    return quote [predicateEval] in [predicateStatus] end
-end)
+  return macro(function(attributes)
+      local predicateEval = terralib:newlist()
+      local predicateStatus = symbol(bool)
+
+      -- the attributes (in this case c_id and c_first) are implicitly copied. We remove them, for the consumer code to work. Dunno why it's like that
+      for i = 1,N do
+          predicateEval:remove(1)
+      end
+
+      -- initialize the predicateStatus var. By default is true
+      predicateEval:insert(quote var [predicateStatus] = true end)
+
+      for i = 0,0 do
+        local attrName = attrNames[i+1]
+
+        predicateEval:insert(quote
+              var consts = { consts }
+              var attr = attributes.["_"..i].[attrName]
+              var const = consts.["_"..i]
+
+              [predicateStatus] = [predicateStatus] and attr:equal(const)
+        end)
+      end
+
+      return quote [predicateEval] in [predicateStatus] end
+  end)
+end
 
 function Selection:produce(tupleType)
     return self.child:produce()
@@ -58,10 +72,11 @@ end
 function Selection:consume()
     -- generate consumer code
     local consumerCode = self.consumer:consume()
+    local predicateCode = self:predicate(self.predicates)
 
     return macro(function(attributes)
         return quote
-            if predicateCode({ self.predicates }, attributes) then
+            if predicateCode(attributes) then
                 consumerCode(attributes)
             end
         end
