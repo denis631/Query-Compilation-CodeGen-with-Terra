@@ -15,6 +15,10 @@ function Operator:prepare()
     self.child:prepare(self)
 end
 
+function Operator:collectIUs()
+    return self.child:collectIUs()
+end
+
  -- abstract methods
 function Operator:produce() end
 function Operator:consume() end 

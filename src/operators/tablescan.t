@@ -9,34 +9,42 @@ end
 
 function TableScan:prepare(requiredIUs, consumer)
     self.consumer = consumer
-    self.attrNames = {}
+    self.symbolsMap = {}
 
-    -- getting the IUs to produce
+    -- generating attribute symbols
     for _, iu in ipairs(requiredIUs) do
         for attrName, attrType in pairs(iu) do
-            table.insert(self.attrNames, attrName)
+            self.symbolsMap[attrName] = symbol(attrType)
         end
     end
 end
 
+--TODO: implement
+function TableScan:collectIUs()
+    local ius = {}
+
+
+
+    return ius
+end
+
 function TableScan:getAttributes()
-    return macro(function(table)
+    return macro(function(row)
         local attributes = terralib:newlist()
 
-        for _,attribute in pairs(self.attrNames) do
-          -- attributes:insert(quote in table.[attribute] end)
-          attributes:insert(quote in { [attribute] = table.[attribute] } end)
+        -- initialize symbol vars with row attributes
+        for attrName, attrSymbol in pairs(self.symbolsMap) do
+            attributes:insert(quote var [attrSymbol] = row.[attrName] end)
         end
 
-        -- return quote in [attributes] end
-        return quote in { [attributes] } end
+        return quote [attributes] end
     end)
 end
 
 function TableScan:produce()
-    -- generating consumer code
+    -- generating consumer code and load attributes code
     local consumerCode = self.consumer:consume()
-    local getAttributesFrom = self:getAttributes()
+    local loadAttributesFrom = self:getAttributes()
 
     return terra(datastore : &Datastore)
         -- access required table and it's count
@@ -45,9 +53,11 @@ function TableScan:produce()
 
         for i = 0, tableCount do
             -- access required attributes
-            var tuple = &table[i]
-            var attrs = getAttributesFrom(tuple)
-            consumerCode(attrs)
+            var row = &table[i]
+            loadAttributesFrom(row)
+
+            -- run consumer code
+            consumerCode()
         end
     end
 end

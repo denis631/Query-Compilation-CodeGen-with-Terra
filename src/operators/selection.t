@@ -12,57 +12,61 @@ function Selection:prepare(requiredIUs, consumer)
     self.consumer = consumer
     self.requiredIUs = requiredIUs
 
-    local requiredIUs = requiredIUs
+    local childRequiredIUs = copy(requiredIUs)
 
-    -- TODO: add new required ius because of ius that are used by the if predicate
-    -- for key, value in pairs(requiredIUs) do
-    --     if !contains(requiredIUs, key) then
-    --         table.insert(requiredIUs, { key = value })
-    --     end
-    -- end
+    local collectedIUs = self:collectIUs()
 
-    self.child:prepare(requiredIUs, self)
+    for _, iu in ipairs(self.predicates) do
+        for key, _ in pairs(iu) do
+            if childRequiredIUs[key] == nil then
+                -- TODO: find the type of the key. Don't hardcode
+                table.insert(childRequiredIUs, { [key] = Integer })
+            end
+        end
+    end
+
+    self.child:prepare(childRequiredIUs, self)
+
+    self.symbolsMap = self.child.symbolsMap
 end
 
-function Selection:predicate(predicates)
-  local attrNames = {}
-  local consts = {}
+function Selection:predicate()
+    local attrNames = {}
+    local consts = {}
 
-  local N = #self.requiredIUs
-
-  for _, predicatePair in ipairs(predicates) do
-    for attrName, const in pairs(predicatePair) do
-      table.insert(attrNames, attrName)
-      table.insert(consts, const)
+    for _, predicatePair in ipairs(self.predicates) do
+        for attrName, const in pairs(predicatePair) do
+            table.insert(attrNames, attrName)
+            table.insert(consts, const)
+        end
     end
-  end
 
-  return macro(function(attributes)
-      local predicateEval = terralib:newlist()
-      local predicateStatus = symbol(bool)
+    local numberOfPredicates = #self.predicates
 
-      -- the attributes (in this case c_id and c_first) are implicitly copied. We remove them, for the consumer code to work. Dunno why it's like that
-      for i = 1,N do
-          predicateEval:remove(1)
-      end
+    -- codegen vars
+    local predicateStatus = symbol(bool)
+    local predicateEval = terralib:newlist()
 
-      -- initialize the predicateStatus var. By default is true
-      predicateEval:insert(quote var [predicateStatus] = true end)
+    -- initialize the predicateStatus var. By default is true
+    predicateEval:insert(quote var [predicateStatus] = true end)
 
-      for i = 0,0 do
-        local attrName = attrNames[i+1]
+    return macro(function()
+        -- remove implicitly inserted entries
+        for i = 1,#predicateEval do
+            predicateEval:remove(1)
+        end
 
-        predicateEval:insert(quote
-              var consts = { consts }
-              var attr = attributes.["_"..i].[attrName]
-              var const = consts.["_"..i]
+        for i = 0,(numberOfPredicates - 1) do
+            local attrName = attrNames[i+1]
+            local const = consts[i+1]
 
-              [predicateStatus] = [predicateStatus] and attr:equal(const)
-        end)
-      end
+            predicateEval:insert(quote
+                [predicateStatus] = [predicateStatus] and [self.symbolsMap[attrName]]:equal(const)
+            end)
+        end
 
-      return quote [predicateEval] in [predicateStatus] end
-  end)
+        return quote [predicateEval] in [predicateStatus] end
+    end)
 end
 
 function Selection:produce(tupleType)
@@ -72,12 +76,12 @@ end
 function Selection:consume()
     -- generate consumer code
     local consumerCode = self.consumer:consume()
-    local predicateCode = self:predicate(self.predicates)
+    local predicateCode = self:predicate()
 
-    return macro(function(attributes)
+    return macro(function()
         return quote
-            if predicateCode(attributes) then
-                consumerCode(attributes)
+            if predicateCode() then
+                consumerCode()
             end
         end
     end)

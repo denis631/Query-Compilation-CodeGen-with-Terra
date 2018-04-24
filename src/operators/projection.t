@@ -10,64 +10,54 @@ function Projection:new(child, requiredIUs)
 end
 
 function Projection:prepare()
-    self.attrTypes = {}
-    self.attrNames = {}
+    self.child:prepare(copy(self.requiredIUs), self)
 
-    for _, iu in ipairs(self.requiredIUs) do
-        for attrName, attrType in pairs(iu) do
-            table.insert(self.attrTypes, attrType)
-            table.insert(self.attrNames, attrName)
-        end
-    end
-
-    self.child:prepare(self.requiredIUs, self)
+    -- store the attribute symbols from the child
+    self.symbolsMap = self.child.symbolsMap
 end
 
 function Projection:produce()
     return self.child:produce()
 end
 
-function createFormatString(attrTypes)
+function createFormatString(N)
     local formatString = "| "
 
-    for _,attrType in ipairs(attrTypes) do
+    for i = 1,N do
         formatString = formatString .. "%s | "
     end
 
     return formatString .. "\n"
 end
 
-function removeFirstHalf(list)
-  local res = terralib:newlist()
-
-  for i = 1,(#list)/2 do
-    res:remove(1)
-  end
-
-  return res
-end
-
 function Projection:stringAttributes()
-  return macro(function(attributes)
+  return macro(function()
       local stringAttributes = terralib:newlist()
 
-      for i = 0,(#self.attrNames - 1) do
-          local attrName = self.attrNames[i+1]
-          stringAttributes:insert(quote in [&int8](attributes.["_"..i].[attrName]:toString()) end)
+      -- remove implicitly inserted entries
+      for i = 1,#stringAttributes do
+          stringAttributes:remove(1)
+      end
+
+      -- stringify the attributes
+      for _, iu in ipairs(self.requiredIUs) do
+          for attrName, _ in pairs(iu) do
+              stringAttributes:insert(quote in [&int8]([self.symbolsMap[attrName]]:toString()) end)
+          end
       end
 
       -- First half of the list is implicitly filled with passed arguments, this is why we remove it
-      return quote in [removeFirstHalf(stringAttributes)] end
+      return quote in [stringAttributes] end
   end)
 end
 
 function Projection:consume()
-    local formatString = createFormatString(self.attrTypes)
+    local formatString = createFormatString(table.size(self.requiredIUs))
     local stringify = self:stringAttributes()
 
-    return macro(function(attributes)
+    return macro(function()
         return quote
-            var stringAttrs = stringify(attributes)
+            var stringAttrs = stringify()
             C.printf(formatString, stringAttrs)
         end
     end)

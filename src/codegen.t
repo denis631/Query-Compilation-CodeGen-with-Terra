@@ -4,6 +4,7 @@ C = terralib.includecstring [[
     #include <string.h>
 ]]
 
+require 'helper'
 require 'datastore'
 require 'operators.operator'
 require 'operators.selection'
@@ -17,18 +18,20 @@ loadDatastore = loadDatastore({
 -- print(loadDatastore)
 datastore = loadDatastore()
 
-query = Projection:new(
-  Selection:new(
-    TableScan:new("customers"),
-    -- having map in map doesn't work... Because terra can not work with lua objects :(
-    {
-      { ["c_id"] = 3 }
-    }),
-  {
-    { ["c_id"] = findFieldTypeForNameInEntries("c_id", Customer.entries) },
-    { ["c_first"] = findFieldTypeForNameInEntries("c_first", Customer.entries) }
-  }
-)
+query =
+    Projection:new(
+        Selection:new(
+            TableScan:new("customers"),
+            {
+                { ["c_id"] = 3 },
+                --{ ["c_first"] = "5Y3pDQPluD" }
+            }
+        ),
+        {
+            --{ ["c_id"] = findFieldTypeForNameInEntries("c_id", Customer.entries) },
+            { ["c_first"] = findFieldTypeForNameInEntries("c_first", Customer.entries) }
+        }
+    )
 
 query:prepare()
 code = query:produce()

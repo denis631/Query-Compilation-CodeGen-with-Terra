@@ -92,6 +92,7 @@ function parse(path, class, propertyName)
     end)
 end
 
+-- TODO: try iterative loading per row
 function loadDatastore(parseParams)
     local stmts = terralib.newlist()
     local datastore = symbol(&Datastore)
