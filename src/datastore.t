@@ -71,65 +71,58 @@ function findFieldTypeForNameInEntries(fieldName, entries)
     end
 end
 
-function parse(path, class, propertyName)
+function parse(path, class, propertyName, datastore)
     local csvRows = load(path, '|')
-    local csvRowsCount = table.getn(csvRows)
+    local csvRowsCount = #csvRows
 
-    return macro(function(datastore)
-        local l = terralib.newlist()
+    local func = terra(datastore : &Datastore)
+        -- set property count
+        datastore.[propertyName .. "Count"] = csvRowsCount
+        -- allocate array
+        datastore.[propertyName] = [&class](C.malloc(sizeof(class) * csvRowsCount))
+    end
 
-        -- set the count of the users array
-        l:insert(quote
-            datastore.[propertyName .. "Count"] = csvRowsCount
-        end)
+    func(datastore)
 
-        -- allocate users array
-        l:insert(quote
-            datastore.[propertyName] = [&class](C.malloc(sizeof(class) * csvRowsCount))
-        end)
+    for i,tuple in ipairs(csvRows) do
+        local stmts = terralib.newlist()
 
-        for i,tuple in ipairs(csvRows) do
-            for index, attr in pairs(csvRows[i]) do
-                -- find the field type of attribute to be set
-                local fieldName = class.entries[index]["field"]
-                local fieldType = class.entries[index]["type"]
+        for index, attr in pairs(csvRows[i]) do
+            -- find the field type of attribute to be set
+            local fieldName = class.entries[index]["field"]
+            local fieldType = class.entries[index]["type"]
 
-                -- cast if necessary, since all data read are strings
-                attr = castIfNecessary(fieldType, attr)
+            -- cast if necessary, since all data read are strings
+            attr = castIfNecessary(fieldType, attr)
 
-                -- assign the property to element in array at index i-1; lua-indices start at 1
-                l:insert(quote
-                    -- call init method in order to initialize the property
-                    datastore.[propertyName][i-1].[fieldName]:init(attr)
-                end)
-            end
+            stmts:insert(quote
+                datastore.[propertyName][i-1].[fieldName]:init(attr)
+            end)
         end
 
-        return quote [l] end
-    end)
+        func = terra(datastore : &Datastore)
+            [stmts]
+        end
+
+        func(datastore)
+    end
 end
 
--- TODO: try iterative loading per row
 function loadDatastore(parseParams)
     local stmts = terralib.newlist()
-    local datastore = symbol(&Datastore)
+    local datastoreInit = terra()
+        return [&Datastore](C.malloc(sizeof(Datastore)))
+    end
 
-    stmts:insert(quote
-        var [datastore] = [&Datastore](C.malloc(sizeof(Datastore)))
-    end)
+    local datastore = datastoreInit()
 
     for _,params in ipairs(parseParams) do
         local path = params[1]
         local class = params[2]
         local attr = params[3]
 
-        stmts:insert(quote
-            [parse(path, class, attr)]([datastore])
-        end)
+        parse(path, class, attr, datastore)
     end
 
-    return terra()
-        [stmts]
-        return [datastore]
-    end
+    return datastore
 end

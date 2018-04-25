@@ -11,12 +11,10 @@ require 'operators.selection'
 require 'operators.tablescan'
 require 'operators.projection'
 
-loadDatastore = loadDatastore({
+datastore = loadDatastore({
     -- getting not enough memory when loading tpcc_customer.tbl
     {'../data/tpcc_customer.tbl', Customer, "customers"}
 })
--- print(loadDatastore)
-datastore = loadDatastore()
 
 query =
     Projection:new(
