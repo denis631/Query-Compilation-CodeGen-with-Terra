@@ -36,5 +36,8 @@ query =
 query:prepare()
 code = query:produce()
 
+-- store query exec code as LLVM IR
+terralib.saveobj("main", "llvmir", {main = code})
+
 print(code)
 code(datastore)

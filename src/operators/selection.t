@@ -14,13 +14,10 @@ function Selection:prepare(requiredIUs, consumer)
 
     local childRequiredIUs = copy(requiredIUs)
 
-    local collectedIUs = self:collectIUs()
-
     for _, iu in ipairs(self.predicates) do
         for key, _ in pairs(iu) do
             if childRequiredIUs[key] == nil then
-                -- TODO: find the type of the key. Don't hardcode
-                table.insert(childRequiredIUs, { [key] = Integer })
+                table.insert(childRequiredIUs, { [key] = datastoreIUs[key]})
             end
         end
     end
@@ -34,14 +31,13 @@ function Selection:predicate()
     local attrNames = {}
     local consts = {}
 
+    -- split predicates into attrNames and consts
     for _, predicatePair in ipairs(self.predicates) do
         for attrName, const in pairs(predicatePair) do
             table.insert(attrNames, attrName)
             table.insert(consts, const)
         end
     end
-
-    local numberOfPredicates = #self.predicates
 
     -- codegen vars
     local predicateStatus = symbol(bool)
@@ -56,7 +52,8 @@ function Selection:predicate()
             predicateEval:remove(1)
         end
 
-        for i = 0,(numberOfPredicates - 1) do
+        -- evaluate all the predicates
+        for i = 0,(#self.predicates - 1) do
             local attrName = attrNames[i+1]
             local const = consts[i+1]
 

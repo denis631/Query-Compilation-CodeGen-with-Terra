@@ -23,7 +23,9 @@ end
 function TableScan:collectIUs()
     local ius = {}
 
-
+    for _, iu in ipairs(Datastore["customer"].entries) do
+        ius[iu["field"]] = iu["type"]
+    end
 
     return ius
 end
@@ -49,9 +51,8 @@ function TableScan:produce()
     return terra(datastore : &Datastore)
         -- access required table and it's count
         var table = datastore.[self.tableName]
-        var tableCount = datastore.[self.tableName .. "Count"]
 
-        for i = 0, tableCount do
+        for i = 0, datastore.[self.tableName .. "Count"] do
             -- access required attributes
             var row = &table[i]
             loadAttributesFrom(row)

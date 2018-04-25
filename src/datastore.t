@@ -36,7 +36,24 @@ struct Datastore {
     customersCount : int
 }
 
--- TODO: Define structs on the flight while parsing csv?
+function collectDatastoreIUs()
+    local ius = {}
+
+    for _, datastoreAttr in ipairs(Datastore.entries) do
+        if datastoreAttr["type"]:ispointer() then
+            for _,tuple in ipairs(datastoreAttr["type"].type.entries) do
+                local attrName = tuple["field"]
+                local attrType = tuple["type"]
+
+                ius[attrName] = attrType
+            end
+        end
+    end
+
+    return ius
+end
+
+datastoreIUs = collectDatastoreIUs()
 
 function castIfNecessary(fieldType, value)
     if fieldType == Integer or fieldType == Timestamp then
