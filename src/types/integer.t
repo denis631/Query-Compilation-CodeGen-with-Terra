@@ -3,6 +3,8 @@ struct Integer {
     value : int32
 }
 
+Integer.rawType = int32
+
 terra Integer:init(value : int32)
     self.value = value
 end

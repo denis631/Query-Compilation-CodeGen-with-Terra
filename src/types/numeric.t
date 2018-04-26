@@ -4,6 +4,8 @@ function Numeric(len, precision)
         value : int64
     }
 
+    NumericT.rawType = rawstring
+
     terra NumericT:init(value : rawstring)
         self.value = 1
     end

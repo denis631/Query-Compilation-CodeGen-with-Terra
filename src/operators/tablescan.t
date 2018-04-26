@@ -19,7 +19,6 @@ function TableScan:prepare(requiredIUs, consumer)
     end
 end
 
---TODO: implement
 function TableScan:collectIUs()
     local ius = {}
 

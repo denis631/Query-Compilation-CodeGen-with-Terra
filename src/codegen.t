@@ -13,7 +13,7 @@ require 'operators.projection'
 
 datastore = loadDatastore({
     -- getting not enough memory when loading tpcc_customer.tbl
-    {'../data/tpcc_customer.tbl', Customer, "customers"}
+    {'../data/tpcc/tpcc_customer.tbl', Customer, "customers"}
 })
 
 query =
@@ -21,13 +21,14 @@ query =
         Selection:new(
             TableScan:new("customers"),
             {
-                { ["c_id"] = 3 },
-                --{ ["c_first"] = "5Y3pDQPluD" }
+                { ["c_id"] = 322 },
+                { ["c_w_id"] = 1 },
+                { ["c_d_id"] = 1 }
             }
         ),
         {
-            --{ ["c_id"] = findFieldTypeForNameInEntries("c_id", Customer.entries) },
-            { ["c_first"] = findFieldTypeForNameInEntries("c_first", Customer.entries) }
+            { ["c_first"] = findFieldTypeForNameInEntries("c_first", Customer.entries) },
+            { ["c_last"] = findFieldTypeForNameInEntries("c_last", Customer.entries) }
         }
     )
 

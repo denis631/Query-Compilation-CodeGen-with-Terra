@@ -5,6 +5,8 @@ function Varchar(N)
         length : int
     }
 
+    VarcharT.rawType = rawstring
+
     terra VarcharT:init(value : rawstring)
         C.strncpy(self.value, value, N);
         self.length = C.strnlen(value, N);

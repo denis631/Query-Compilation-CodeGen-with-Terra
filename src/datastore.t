@@ -75,14 +75,25 @@ function parse(path, class, propertyName, datastore)
     local csvRows = load(path, '|')
     local csvRowsCount = #csvRows
 
-    local func = terra(datastore : &Datastore)
+    local init = terra()
         -- set property count
         datastore.[propertyName .. "Count"] = csvRowsCount
         -- allocate array
         datastore.[propertyName] = [&class](C.malloc(sizeof(class) * csvRowsCount))
     end
+    init()
 
-    func(datastore)
+    local propertySetter = {}
+
+    for i, iu in ipairs(class.entries) do
+        local fieldName = iu["field"]
+        local fieldType = iu["type"]
+
+        -- generate setter func
+        propertySetter[fieldName] = terra(idx : int, param : fieldType.rawType)
+            datastore.[propertyName][idx].[fieldName]:init(param)
+        end
+    end
 
     for i,tuple in ipairs(csvRows) do
         local stmts = terralib.newlist()
@@ -95,16 +106,8 @@ function parse(path, class, propertyName, datastore)
             -- cast if necessary, since all data read are strings
             attr = castIfNecessary(fieldType, attr)
 
-            stmts:insert(quote
-                datastore.[propertyName][i-1].[fieldName]:init(attr)
-            end)
+            propertySetter[fieldName](i - 1, attr)
         end
-
-        func = terra(datastore : &Datastore)
-            [stmts]
-        end
-
-        func(datastore)
     end
 end
 

@@ -5,6 +5,8 @@ function Char(N)
         length : int
     }
 
+    CharT.rawType = rawstring
+
     terra CharT:init(value : rawstring)
         C.memcpy(&self.value, value, N);
         self.length = C.strnlen(self.value, N);
