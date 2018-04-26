@@ -8,21 +8,21 @@ function Selection:new(child, predicates)
     return t
 end
 
-function Selection:prepare(requiredIUs, consumer)
+function Selection:prepare(requiredAttributes, consumer)
     self.consumer = consumer
-    self.requiredIUs = requiredIUs
+    self.requiredAttributes = requiredAttributes
 
-    local childRequiredIUs = copy(requiredIUs)
+    local childRequiredAttributes= copy(requiredAttributes)
 
-    for _, iu in ipairs(self.predicates) do
-        for key, _ in pairs(iu) do
-            if childRequiredIUs[key] == nil then
-                table.insert(childRequiredIUs, { [key] = datastoreIUs[key]})
+    for _, predicate in ipairs(self.predicates) do
+        for attrName, _ in pairs(predicate) do
+            if childRequiredAttributes[attrName] == nil then
+                table.insert(childRequiredAttributes, attrName)
             end
         end
     end
 
-    self.child:prepare(childRequiredIUs, self)
+    self.child:prepare(childRequiredAttributes, self)
 
     self.symbolsMap = self.child.symbolsMap
 end

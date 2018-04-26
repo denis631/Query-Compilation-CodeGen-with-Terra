@@ -1,6 +1,5 @@
 require 'parser.parser'
 
--- TODO: require types
 require 'types.integer'
 require 'types.varchar'
 require 'types.char'
@@ -36,44 +35,26 @@ struct Datastore {
     customersCount : int
 }
 
-function collectDatastoreIUs()
-    local ius = {}
+function loadDatastore(parseParams)
+    local datastoreInit = terra()
+        return [&Datastore](C.malloc(sizeof(Datastore)))
+    end
+    local datastore = datastoreInit()
 
-    for _, datastoreAttr in ipairs(Datastore.entries) do
-        if datastoreAttr["type"]:ispointer() then
-            for _,tuple in ipairs(datastoreAttr["type"].type.entries) do
-                local attrName = tuple["field"]
-                local attrType = tuple["type"]
+    for _,params in ipairs(parseParams) do
+        local path = params[1]
+        local attr = params[2]
 
-                ius[attrName] = attrType
-            end
-        end
+        parse(path, attr, datastore)
     end
 
-    return ius
+    return datastore
 end
 
-datastoreIUs = collectDatastoreIUs()
-
-function castIfNecessary(fieldType, value)
-    if fieldType == Integer or fieldType == Timestamp then
-        return tonumber(value)
-    else
-        return value
-    end
-end
-
-function findFieldTypeForNameInEntries(fieldName, entries)
-    for _,tuple in ipairs(entries) do
-        if tuple["field"] == fieldName then
-            return tuple["type"]
-        end
-    end
-end
-
-function parse(path, class, propertyName, datastore)
+function parse(path, propertyName, datastore)
     local csvRows = load(path, '|')
     local csvRowsCount = #csvRows
+    local class = relationClassMap[propertyName]
 
     local init = terra()
         -- set property count
@@ -111,21 +92,33 @@ function parse(path, class, propertyName, datastore)
     end
 end
 
-function loadDatastore(parseParams)
-    local stmts = terralib.newlist()
-    local datastoreInit = terra()
-        return [&Datastore](C.malloc(sizeof(Datastore)))
+function collectDatastoreIUs()
+    local ius = {}
+
+    for _, datastoreAttr in ipairs(Datastore.entries) do
+        if datastoreAttr["type"]:ispointer() then
+            for _,tuple in ipairs(datastoreAttr["type"].type.entries) do
+                local attrName = tuple["field"]
+                local attrType = tuple["type"]
+
+                ius[attrName] = attrType
+            end
+        end
     end
 
-    local datastore = datastoreInit()
+    return ius
+end
 
-    for _,params in ipairs(parseParams) do
-        local path = params[1]
-        local class = params[2]
-        local attr = params[3]
+datastoreIUs = collectDatastoreIUs()
 
-        parse(path, class, attr, datastore)
+relationClassMap = {
+    ["customers"] = Customer
+}
+
+function castIfNecessary(fieldType, value)
+    if fieldType == Integer or fieldType == Timestamp then
+        return tonumber(value)
+    else
+        return value
     end
-
-    return datastore
 end

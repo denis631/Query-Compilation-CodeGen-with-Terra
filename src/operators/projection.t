@@ -1,16 +1,16 @@
 -- Projection
 Projection = Operator:newChildClass()
 
-function Projection:new(child, requiredIUs)
+function Projection:new(child, requiredAttributes)
     local p = Projection.parentClass.new(self)
     p.__type = Projection
     p.child = child
-    p.requiredIUs = requiredIUs
+    p.requiredAttributes = requiredAttributes
     return p
 end
 
 function Projection:prepare()
-    self.child:prepare(copy(self.requiredIUs), self)
+    self.child:prepare(copy(self.requiredAttributes), self)
 
     -- store the attribute symbols from the child
     self.symbolsMap = self.child.symbolsMap
@@ -40,10 +40,8 @@ function Projection:stringAttributes()
       end
 
       -- stringify the attributes
-      for _, iu in ipairs(self.requiredIUs) do
-          for attrName, _ in pairs(iu) do
-              stringAttributes:insert(quote in [&int8]([self.symbolsMap[attrName]]:toString()) end)
-          end
+      for _, attrName in ipairs(self.requiredAttributes) do
+          stringAttributes:insert(quote in [&int8]([self.symbolsMap[attrName]]:toString()) end)
       end
 
       -- First half of the list is implicitly filled with passed arguments, this is why we remove it
@@ -52,7 +50,7 @@ function Projection:stringAttributes()
 end
 
 function Projection:consume()
-    local formatString = createFormatString(table.size(self.requiredIUs))
+    local formatString = createFormatString(table.size(self.requiredAttributes))
     local stringify = self:stringAttributes()
 
     return macro(function()

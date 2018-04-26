@@ -7,22 +7,20 @@ function TableScan:new(tableName)
     return t
 end
 
-function TableScan:prepare(requiredIUs, consumer)
+function TableScan:prepare(requiredAttributes, consumer)
     self.consumer = consumer
     self.symbolsMap = {}
 
     -- generating attribute symbols
-    for _, iu in ipairs(requiredIUs) do
-        for attrName, attrType in pairs(iu) do
-            self.symbolsMap[attrName] = symbol(attrType)
-        end
+    for _, attrName in ipairs(requiredAttributes) do
+        self.symbolsMap[attrName] = symbol(datastoreIUs[attrName])
     end
 end
 
 function TableScan:collectIUs()
     local ius = {}
 
-    for _, iu in ipairs(Datastore["customer"].entries) do
+    for _, iu in ipairs(relationClassMap[self.tableName].entries) do
         ius[iu["field"]] = iu["type"]
     end
 

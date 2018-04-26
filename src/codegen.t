@@ -12,8 +12,7 @@ require 'operators.tablescan'
 require 'operators.projection'
 
 datastore = loadDatastore({
-    -- getting not enough memory when loading tpcc_customer.tbl
-    {'../data/tpcc/tpcc_customer.tbl', Customer, "customers"}
+    {'../data/tpcc_customer.tbl', "customers"}
 })
 
 query =
@@ -27,13 +26,14 @@ query =
             }
         ),
         {
-            { ["c_first"] = findFieldTypeForNameInEntries("c_first", Customer.entries) },
-            { ["c_last"] = findFieldTypeForNameInEntries("c_last", Customer.entries) }
+            "c_first", "c_last"
         }
     )
 
+local x = os.clock()
 query:prepare()
 code = query:produce()
+print(string.format("query code generated in %.6f seconds\n", os.clock() - x))
 
 -- store query exec code as LLVM IR
 terralib.saveobj("main", "llvmir", {main = code})
