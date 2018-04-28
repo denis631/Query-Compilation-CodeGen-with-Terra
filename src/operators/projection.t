@@ -17,7 +17,10 @@ function Projection:prepare()
 end
 
 function Projection:produce()
-    return self.child:produce()
+    local produceCode = self.child:produce()
+    return terra(datastore : &Datastore)
+        produceCode(datastore)
+    end
 end
 
 function createFormatString(N)
@@ -32,12 +35,7 @@ end
 
 function Projection:stringAttributes()
   return macro(function()
-      local stringAttributes = terralib:newlist()
-
-      -- remove implicitly inserted entries
-      for i = 1,#stringAttributes do
-          stringAttributes:remove(1)
-      end
+      local stringAttributes = terralib.newlist()
 
       -- stringify the attributes
       for _, attrName in ipairs(self.requiredAttributes) do
@@ -49,7 +47,7 @@ function Projection:stringAttributes()
   end)
 end
 
-function Projection:consume()
+function Projection:consume(operator)
     local formatString = createFormatString(table.size(self.requiredAttributes))
     local stringify = self:stringAttributes()
 

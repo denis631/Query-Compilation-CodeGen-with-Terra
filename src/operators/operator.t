@@ -21,4 +21,5 @@ end
 
  -- abstract methods
 function Operator:produce() end
-function Operator:consume() end 
+function Operator:consume(operator) end 
+

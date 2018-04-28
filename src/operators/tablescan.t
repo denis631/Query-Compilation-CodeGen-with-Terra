@@ -1,4 +1,7 @@
 -- TableScan
+
+require 'hashtable.hashtable'
+
 TableScan = Operator:newChildClass()
 
 function TableScan:new(tableName)
@@ -29,7 +32,7 @@ end
 
 function TableScan:getAttributes()
     return macro(function(row)
-        local attributes = terralib:newlist()
+        local attributes = terralib.newlist()
 
         -- initialize symbol vars with row attributes
         for attrName, attrSymbol in pairs(self.symbolsMap) do
@@ -42,20 +45,21 @@ end
 
 function TableScan:produce()
     -- generating consumer code and load attributes code
-    local consumerCode = self.consumer:consume()
+    local consumerCode = self.consumer:consume(self)
     local loadAttributesFrom = self:getAttributes()
 
-    return terra(datastore : &Datastore)
-        -- access required table and it's count
-        var table = datastore.[self.tableName]
+    return macro(function(datastore)
+        return quote
+            -- access required table and it's count
+            var table = datastore.[self.tableName]
 
-        for i = 0, datastore.[self.tableName .. "Count"] do
-            -- access required attributes
-            var row = &table[i]
-            loadAttributesFrom(row)
+            for i = 0, datastore.[self.tableName .. "Count"] do
+                -- access required attributes
+                loadAttributesFrom(&table[i])
 
-            -- run consumer code
-            consumerCode()
+                -- run consumer code
+                consumerCode()
+            end
         end
-    end
+    end)
 end

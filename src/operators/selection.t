@@ -41,17 +41,12 @@ function Selection:predicate()
 
     -- codegen vars
     local predicateStatus = symbol(bool)
-    local predicateEval = terralib:newlist()
+    local predicateEval = terralib.newlist()
 
     -- initialize the predicateStatus var. By default is true
     predicateEval:insert(quote var [predicateStatus] = true end)
 
     return macro(function()
-        -- remove implicitly inserted entries
-        for i = 1,#predicateEval do
-            predicateEval:remove(1)
-        end
-
         -- evaluate all the predicates
         for i = 0,(#self.predicates - 1) do
             local attrName = attrNames[i+1]
@@ -70,9 +65,9 @@ function Selection:produce(tupleType)
     return self.child:produce()
 end
 
-function Selection:consume()
+function Selection:consume(operator)
     -- generate consumer code
-    local consumerCode = self.consumer:consume()
+    local consumerCode = self.consumer:consume(self)
     local predicateCode = self:predicate()
 
     return macro(function()
