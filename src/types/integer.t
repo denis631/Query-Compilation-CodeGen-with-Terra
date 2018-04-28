@@ -18,3 +18,11 @@ end
 terra Integer:equal(other : int32)
   return self.value == other
 end
+
+terra Integer:eq(other : Integer)
+    return self.value == other.value
+end
+
+terra Integer:hash()
+    return self.value
+end

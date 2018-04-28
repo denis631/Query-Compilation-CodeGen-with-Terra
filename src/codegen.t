@@ -17,15 +17,17 @@ datastore = loadDatastore({
         {'../data/tpcc/tpcc_order.tbl', "orders"}
 })
 
+--[=====[ Query ]]
+select c_first, c_last, o_all_local
+from customer, order
+where o_w_id = c_w_id
+and o_d_id = c_d_id
+and o_c_id = c_id
+and c_id = 322
+and c_w_id = 1
+and c_d_id = 1
+--]=====]
 
--- select c_first, c_last, o_all_local
--- from customer, order
--- where o_w_id = c_w_id
--- and o_d_id = c_d_id
--- and o_c_id = c_id
--- and c_id = 322
--- and c_w_id = 1
--- and c_d_id = 1
 query =
     Projection:new(
         InnerJoin:new(
@@ -39,13 +41,13 @@ query =
             ),
             TableScan:new("orders"),
             {
-                { ["o_w_id"] = "c_w_id" },
-                { ["o_d_id"] = "c_d_id" },
-                { ["o_c_id"] = "c_id"   }
+                { ["c_w_id"] = "o_w_id" },
+                { ["c_d_id"] = "o_d_id" },
+                { ["c_id"] = "o_c_id"   }
             }
         ),
         {
-            "c_first", "c_last", "o_all_local"
+            "c_first", "c_last"--, "o_all_local"
         }
     )
 
@@ -56,6 +58,7 @@ print(string.format("query code generated in %.6f seconds\n", os.clock() - x))
 
 -- store query exec code as LLVM IR
 terralib.saveobj("main", "llvmir", {main = code})
+--print(string.format("query code generated and stored as LLVM IR in %.6f seconds\n", os.clock() - x))
 
 print(code)
 code(datastore)

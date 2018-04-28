@@ -9,8 +9,8 @@ end
 function copy(tab)
     local res = {}
 
-    for _, val in ipairs(tab) do
-        table.insert(res, val)
+    for key, val in pairs(tab) do
+        res[key] = val
     end
 
     return res

@@ -1,7 +1,4 @@
 -- TableScan
-
-require 'hashtable.hashtable'
-
 TableScan = Operator:newChildClass()
 
 function TableScan:new(tableName)
