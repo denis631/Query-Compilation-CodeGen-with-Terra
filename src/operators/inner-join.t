@@ -10,6 +10,20 @@ function InnerJoin:new(leftOperator, rightOperator, predicates)
     return t
 end
 
+function InnerJoin:collectIUs()
+    local res = {}
+
+    for _, iu in ipairs(self.leftOperator:collectIUs()) do
+        table.insert(res, iu)
+    end
+
+    for _, iu in ipairs(self.rightOperator:collectIUs()) do
+        table.insert(res, iu)
+    end
+
+    return res
+end
+
 function InnerJoin:prepare(requiredAttributes, consumer)
     self.consumer = consumer
     self.requiredAttributes = copy(requiredAttributes)
@@ -151,12 +165,14 @@ function InnerJoin:consume(operator)
                         return quote [stmts] end
                 end)
 
-                -- probe
+                -- call consumer on all matches
                 stmts:insert(quote
-                            var val = [self.mapSymbol]:find({[key]})
-                        if val ~= nil then
+                        var iterator = [self.mapSymbol]:find({[key]})
+                        while iterator:hasNext() do
+                            var val = iterator:next().value
+
                             -- produce symbols for the consumer
-                            [produceSymbols](val.value)
+                            [produceSymbols](val)
                             consumerCode()
                         end
                 end)

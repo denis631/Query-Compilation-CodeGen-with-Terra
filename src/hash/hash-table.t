@@ -44,11 +44,10 @@ function HashTable(KeyT, ValueT, N)
         next : &NodeT
     }
 
-    -- HashTableT.init = terra()
-    --     var map : HashTable(KeyT, ValueT)
-    --     -- map.data = [&NodeT](C.malloc(sizeof(NodeT) * 20))
-    --     return map
-    -- end
+    local struct Iterator {
+        key : KeyT
+        ptr : &NodeT
+    }
 
     terra HashTableT:init()
         self.data = [&NodeT](C.malloc(sizeof(NodeT) * 150000))
@@ -98,6 +97,10 @@ function HashTable(KeyT, ValueT, N)
         end
     end
 
+    terra KeyT:equal(other : KeyT)
+        return [equal(#KeyT.entries)](self, other)
+    end
+
     -- iterator? vector of results?
     -- how can I utilize SIMD instructions?
     terra HashTableT:find(key : KeyT)
@@ -106,20 +109,26 @@ function HashTable(KeyT, ValueT, N)
 
         var tmp = self.table[idx]
 
-        -- return first match
-        while tmp ~= nil do
-            if key:equal(tmp.key) then
-                return tmp
-            else
-                tmp = tmp.next
-            end
-        end
-
-        return nil
+        -- return iterator
+        return Iterator { key, tmp }
     end
 
-    terra KeyT:equal(other : KeyT)
-       return [equal(#KeyT.entries)](self, other)
+    terra Iterator:hasNext()
+        while self.ptr ~= nil and (not self.ptr.key:equal(self.key)) do
+            self.ptr = self.ptr.next
+        end
+
+        return self.ptr ~= nil
+    end
+
+    terra Iterator:next()
+        -- dereference the pointer
+        var res = self.ptr
+
+        -- point to the next item
+        self.ptr = self.ptr.next
+
+        return res
     end
 
     return HashTableT
