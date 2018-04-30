@@ -13,7 +13,7 @@ function TableScan:prepare(requiredAttributes, consumer)
 
     -- generating attribute symbols
     for _, attrName in ipairs(requiredAttributes) do
-        self.symbolsMap[attrName] = symbol(datastoreIUs[attrName])
+        self.symbolsMap[attrName] = symbol(datastoreIUs[attrName], attrName)
     end
 end
 

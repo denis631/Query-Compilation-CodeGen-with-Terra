@@ -7,6 +7,9 @@ struct Datastore {
 
     orders : &Order
     ordersCount : int
+
+    orderlines : &Orderline
+    orderlinesCount : int
 }
 
 function loadDatastore(parseParams)
@@ -87,7 +90,8 @@ datastoreIUs = collectDatastoreIUs()
 
 relationClassMap = {
     ["customers"] = Customer,
-    ["orders"] = Order
+    ["orders"] = Order,
+    ["orderlines"] = Orderline
 }
 
 function castIfNecessary(fieldType, value)

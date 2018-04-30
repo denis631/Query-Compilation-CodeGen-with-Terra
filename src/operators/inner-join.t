@@ -13,12 +13,12 @@ end
 function InnerJoin:collectIUs()
     local res = {}
 
-    for _, iu in ipairs(self.leftOperator:collectIUs()) do
-        table.insert(res, iu)
+    for attrName, attrType in pairs(self.leftOperator:collectIUs()) do
+        res[attrName] = attrType
     end
 
-    for _, iu in ipairs(self.rightOperator:collectIUs()) do
-        table.insert(res, iu)
+    for attrName, attrType in pairs(self.rightOperator:collectIUs()) do
+        res[attrName] = attrType
     end
 
     return res
@@ -28,31 +28,31 @@ function InnerJoin:prepare(requiredAttributes, consumer)
     self.consumer = consumer
     self.requiredAttributes = copy(requiredAttributes)
 
-    local leftAndRightRequiredAttrs = copy(requiredAttributes)
+    self.keyAttrs = {}
+
+    self.leftRequiredAttributes = {}
+    self.rightRequiredAttributes = {}
 
     for _,predicatePair in ipairs(self.predicates) do
         for leftAttrName,rightAttrName in pairs(predicatePair) do
-            table.insert(leftAndRightRequiredAttrs, leftAttrName)
-            table.insert(leftAndRightRequiredAttrs, rightAttrName)
+            self.keyAttrs[leftAttrName] = true
+            table.insert(self.leftRequiredAttributes, leftAttrName)
+            table.insert(self.rightRequiredAttributes, rightAttrName)
         end
     end
 
-    local leftRequiredAttributes = {}
-    local rightRequiredAttributes = {}
-
     local leftIUs = self.leftOperator:collectIUs()
-    local rightIUs = self.rightOperator:collectIUs()
 
-    for _,requiredAttr in ipairs(leftAndRightRequiredAttrs) do
+    for _,requiredAttr in ipairs(copy(requiredAttributes)) do
         if leftIUs[requiredAttr] ~= nil then
-            table.insert(leftRequiredAttributes, requiredAttr)
+            table.insert(self.leftRequiredAttributes, requiredAttr)
         else
-            table.insert(rightRequiredAttributes, requiredAttr)
+            table.insert(self.rightRequiredAttributes, requiredAttr)
         end
-   end
+    end
 
-    self.leftOperator:prepare(leftRequiredAttributes, self)
-    self.rightOperator:prepare(rightRequiredAttributes, self)
+    self.leftOperator:prepare(self.leftRequiredAttributes, self)
+    self.rightOperator:prepare(self.rightRequiredAttributes, self)
 
     self.symbolsMap = {}
 
@@ -151,13 +151,21 @@ function InnerJoin:consume(operator)
                 end
 
                 -- produce the symbols for the consumer to use
-                local produceSymbols = macro(function(val)
+                local produceSymbols = macro(function(iter)
                         local stmts = terralib.newlist()
                         local i = 0
-                        for _,attrName in ipairs(self.requiredAttributes) do
-                            if leftIUs[attrName] ~= nil then
+
+                        for leftAttrName,_ in pairs(self.keyAttrs) do
+                            local attrSym = self.symbolsMap[leftAttrName]
+                            stmts:insert(quote var [attrSym] = iter.key.["_"..i] end)
+                            i = i + 1
+                        end
+
+                        i = 0
+                        for _,attrName in ipairs(self.leftRequiredAttributes) do
+                            if self.keyAttrs[attrName] == nil then
                                 local attrSym = self.symbolsMap[attrName]
-                                stmts:insert(quote var [attrSym] = val.["_"..i] end)
+                                stmts:insert(quote var [attrSym] = iter.value.["_"..i] end)
                                 i = i + 1
                             end
                         end
@@ -169,10 +177,10 @@ function InnerJoin:consume(operator)
                 stmts:insert(quote
                         var iterator = [self.mapSymbol]:find({[key]})
                         while iterator:hasNext() do
-                            var val = iterator:next().value
+                            var iter = iterator:next()
 
                             -- produce symbols for the consumer
-                            [produceSymbols](val)
+                            [produceSymbols](iter)
                             consumerCode()
                         end
                 end)

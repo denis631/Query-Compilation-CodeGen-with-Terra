@@ -10,5 +10,9 @@ function Numeric(len, precision)
         self.value = 1
     end
 
+    terra NumericT:toString()
+        return ""
+    end
+
     return NumericT
 end
