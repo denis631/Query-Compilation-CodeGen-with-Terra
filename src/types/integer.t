@@ -24,5 +24,8 @@ terra Integer:eq(other : Integer)
 end
 
 terra Integer:hash()
-    return self.value
+    var r = 88172645463325252ull ^ self.value
+    r = r ^ (r << 13)
+    r = r ^ (r >> 7)
+    return (r ^ (r << 17))
 end

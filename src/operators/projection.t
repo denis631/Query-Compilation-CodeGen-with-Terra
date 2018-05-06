@@ -23,38 +23,28 @@ function Projection:produce()
     end
 end
 
-function createFormatString(N)
-    local formatString = "| "
-
-    for i = 1,N do
-        formatString = formatString .. "%s | "
-    end
-
-    return formatString .. "\n"
-end
-
-function Projection:stringAttributes()
+function Projection:printAttributes()
   return macro(function()
       local stringAttributes = terralib.newlist()
 
       -- stringify the attributes
       for _, attrName in ipairs(self.requiredAttributes) do
-          stringAttributes:insert(quote in [&int8]([self.symbolsMap[attrName]]:toString()) end)
+          stringAttributes:insert(quote C.printf("%s | ", [&int8]([self.symbolsMap[attrName]]:toString())) end)
       end
 
+      stringAttributes:insert(quote C.printf("\n") end)
+
       -- First half of the list is implicitly filled with passed arguments, this is why we remove it
-      return quote in [stringAttributes] end
+      return quote [stringAttributes] end
   end)
 end
 
 function Projection:consume(operator)
-    local formatString = createFormatString(table.size(self.requiredAttributes))
-    local stringify = self:stringAttributes()
+    local printify = self:printAttributes()
 
     return macro(function()
         return quote
-            var stringAttrs = stringify()
-            C.printf(formatString, stringAttrs)
+            printify()
         end
     end)
 end

@@ -12,6 +12,10 @@ function Varchar(N)
         self.length = C.strnlen(value, N);
     end
 
+    terra VarcharT:equal(value : rawstring)
+        return C.strncmp(self.value, value, N) == 0
+    end
+
     terra VarcharT:toString()
         return self.value
     end

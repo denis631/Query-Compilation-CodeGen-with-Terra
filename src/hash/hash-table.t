@@ -27,21 +27,67 @@ function equal(N)
     end)
 end
 
+-- Vector
+function Vector(T)
+    local struct VectorT {
+        data: &T
+        count: uint32
+        capacity: uint32
+    }
+
+    terra VectorT:init()
+        self.count = 0
+        self.capacity = 32
+        self.data = [&T](C.calloc(self.capacity, sizeof(T)))
+    end
+
+    terra VectorT:push(val : T)
+        if self.count == self.capacity then
+            self.capacity = self.capacity * 2
+            var tmp = [&T](C.calloc(self.capacity, sizeof(T)))
+
+            for i = 0,(self.count-1) do
+                tmp[i] = self.data[i]
+            end
+
+            C.free(self.data)
+            self.data = tmp
+        end
+
+        self.data[self.count] = val
+        self.count = self.count + 1
+    end
+
+    terra VectorT:get(idx : int)
+        return self.data[idx]
+    end
+
+    terra VectorT:getPtr(idx : int)
+        return &self.data[idx]
+    end
+
+    terra VectorT:count()
+        return self.count
+    end
+
+    return VectorT
+end
+
 -- Implementation of "Lazy" MultiMap Hashing with Chaining
 function HashTable(KeyT, ValueT, N)
-    -- HashTableT
-    local struct HashTableT {
-        data : &NodeT
-        dataCount : uint32
-
-        table : &&NodeT
-        tableSize : uint32
-    }
 
     local struct NodeT {
         key : KeyT
         value : ValueT
         next : &NodeT
+    }
+
+    -- HashTableT
+    local struct HashTableT {
+        data : Vector(NodeT)
+
+        table : &&NodeT
+        tableSize : uint32
     }
 
     local struct Iterator {
@@ -50,8 +96,7 @@ function HashTable(KeyT, ValueT, N)
     }
 
     terra HashTableT:init()
-        self.data = [&NodeT](C.malloc(sizeof(NodeT) * 150000))
-        self.dataCount = 0
+        self.data:init()
     end
 
     terra NodeT:init(key : KeyT, value : ValueT)
@@ -64,8 +109,7 @@ function HashTable(KeyT, ValueT, N)
         var node : NodeT
         node:init(key, value)
 
-        self.data[self.dataCount] = node
-        self.dataCount = self.dataCount + 1
+        self.data:push(node)
     end
 
     local Hash = macro(function(key)
@@ -82,18 +126,23 @@ function HashTable(KeyT, ValueT, N)
     end)
 
     terra HashTableT:finalize()
-        var numberOfEntries = self.dataCount
+        var numberOfEntries = self.data:count()
 
-        self.tableSize = nextPowerOf2(numberOfEntries)
-        self.table = [&&NodeT](C.malloc(sizeof(uint64) * self.tableSize))
+        var tmp = nextPowerOf2(numberOfEntries)
+        if tmp == 0 then
+            tmp = 1
+        end
+
+        self.tableSize = tmp
+        self.table = [&&NodeT](C.calloc(self.tableSize, sizeof(uint64)))
         var tableMask = self.tableSize - 1
 
         for i=0,numberOfEntries do
-            var elem = self.data[i]
+            var elem = self.data:get(i)
             var idx = Hash(elem.key) and tableMask
 
             elem.next = self.table[idx]
-            self.table[idx] = &self.data[i]
+            self.table[idx] = self.data:getPtr(idx)
         end
     end
 
@@ -101,16 +150,14 @@ function HashTable(KeyT, ValueT, N)
         return [equal(#KeyT.entries)](self, other)
     end
 
-    -- iterator? vector of results?
-    -- how can I utilize SIMD instructions?
     terra HashTableT:find(key : KeyT)
         var tableMask = self.tableSize - 1
         var idx = Hash(key) and tableMask
 
-        var tmp = self.table[idx]
+        -- C.printf("idx: %d\n", idx)
 
         -- return iterator
-        return Iterator { key, tmp }
+        return Iterator { key, self.table[idx] }
     end
 
     terra Iterator:hasNext()
