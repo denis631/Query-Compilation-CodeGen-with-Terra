@@ -13,9 +13,9 @@ require 'operators.projection'
 require 'operators.inner-join'
 
 datastore = loadDatastore({
-        {'../data/tpcc_customer.tbl', "customers"},
-        {'../data/tpcc_order.tbl', "orders"},
-        {"../data/tpcc_orderline.tbl", "orderlines"}
+        {'../data/tpcc/tpcc_customer.tbl', "customers"},
+        {'../data/tpcc/tpcc_order.tbl', "orders"},
+        {"../data/tpcc/tpcc_orderline.tbl", "orderlines"}
 })
 
 --[=====[ Query ]]

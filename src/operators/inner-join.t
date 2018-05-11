@@ -68,7 +68,7 @@ function AlgebraTree.InnerJoin:produce(tupleType)
             -- generate key type for the HashMap
             for _,predicatePair in ipairs(self.predicates) do
                 for leftAttrName,_ in pairs(predicatePair) do
-                    table.insert(keyT, datastoreIUs[leftAttrName])
+                    table.insert(keyT, &datastoreIUs[leftAttrName])
                 end
             end
 
@@ -76,7 +76,7 @@ function AlgebraTree.InnerJoin:produce(tupleType)
             local leftIUs = self.leftOperator:collectIUs()
             for _, attrName in ipairs(self.requiredAttributes) do
                 if leftIUs[attrName] ~= nil then
-                    table.insert(valueT, datastoreIUs[attrName])
+                    table.insert(valueT, &datastoreIUs[attrName])
                 end
             end
 

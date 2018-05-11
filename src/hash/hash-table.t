@@ -20,7 +20,7 @@ function equal(N)
         stmts:insert(quote var [eq] = true end)
 
         for i = 0,(N - 1) do
-            stmts:insert(quote [eq] = [eq] and a.["_"..i]:eq(b.["_"..i]) end)
+            stmts:insert(quote [eq] = [eq] and (@a.["_"..i]):eq(@b.["_"..i]) end)
         end
 
         return quote [stmts] in [eq] end
@@ -74,8 +74,8 @@ function Vector(T)
 end
 
 -- Implementation of "Lazy" MultiMap Hashing with Chaining
-function HashTable(KeyT, ValueT, N)
-
+function HashTable(KeyT, ValueT)
+    -- NodeT
     local struct NodeT {
         key : KeyT
         value : ValueT
@@ -90,6 +90,7 @@ function HashTable(KeyT, ValueT, N)
         tableSize : uint32
     }
 
+    -- Iterator
     local struct Iterator {
         key : KeyT
         ptr : &NodeT
@@ -147,7 +148,7 @@ function HashTable(KeyT, ValueT, N)
     end
 
     terra KeyT:equal(other : KeyT)
-        return [equal(#KeyT.entries)](self, other)
+        return [equal(#KeyT.entries)](@self, other)
     end
 
     terra HashTableT:find(key : KeyT)

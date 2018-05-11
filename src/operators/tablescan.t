@@ -5,7 +5,9 @@ function AlgebraTree.TableScan:prepare(requiredAttributes, consumer)
 
     -- generating attribute symbols
     for _, attrName in ipairs(requiredAttributes) do
-        self.symbolsMap[attrName] = symbol(datastoreIUs[attrName], attrName)
+        -- TODO: not raw type but pointer type
+        -- TODO: sort Operator
+        self.symbolsMap[attrName] = symbol(&datastoreIUs[attrName], attrName)
     end
 end
 
@@ -25,7 +27,7 @@ function AlgebraTree.TableScan:getAttributes()
 
         -- initialize symbol vars with row attributes
         for attrName, attrSymbol in pairs(self.symbolsMap) do
-            attributes:insert(quote var [attrSymbol] = row.[attrName] end)
+            attributes:insert(quote var [attrSymbol] = &row.[attrName] end)
         end
 
         return quote [attributes] end

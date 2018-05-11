@@ -48,7 +48,7 @@ function AlgebraTree.Selection:predicate()
             local const = consts[i+1]
 
             predicateEval:insert(quote
-                [predicateStatus] = [predicateStatus] and [self.symbolsMap[attrName]]:equal(const)
+                [predicateStatus] = [predicateStatus] and (@[self.symbolsMap[attrName]]):equal(const)
             end)
         end
 
