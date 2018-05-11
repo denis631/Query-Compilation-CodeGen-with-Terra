@@ -1,13 +1,5 @@
 -- TableScan
-TableScan = Operator:newChildClass()
-
-function TableScan:new(tableName)
-    local t = TableScan.parentClass.new(self)
-    t.tableName = tableName
-    return t
-end
-
-function TableScan:prepare(requiredAttributes, consumer)
+function AlgebraTree.TableScan:prepare(requiredAttributes, consumer)
     self.consumer = consumer
     self.symbolsMap = {}
 
@@ -17,7 +9,7 @@ function TableScan:prepare(requiredAttributes, consumer)
     end
 end
 
-function TableScan:collectIUs()
+function AlgebraTree.TableScan:collectIUs()
     local ius = {}
 
     for _, iu in ipairs(relationClassMap[self.tableName].entries) do
@@ -27,7 +19,7 @@ function TableScan:collectIUs()
     return ius
 end
 
-function TableScan:getAttributes()
+function AlgebraTree.TableScan:getAttributes()
     return macro(function(row)
         local attributes = terralib.newlist()
 
@@ -40,7 +32,7 @@ function TableScan:getAttributes()
     end)
 end
 
-function TableScan:produce()
+function AlgebraTree.TableScan:produce()
     -- generating consumer code and load attributes code
     local consumerCode = self.consumer:consume(self)
     local loadAttributesFrom = self:getAttributes()

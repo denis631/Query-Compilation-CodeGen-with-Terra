@@ -1,16 +1,6 @@
 require 'hash.hash-table'
 -- InnerJoin
-InnerJoin = Operator:newChildClass()
-
-function InnerJoin:new(leftOperator, rightOperator, predicates)
-    local t = TableScan.parentClass.new(self)
-    t.leftOperator = leftOperator
-    t.rightOperator = rightOperator
-    t.predicates = predicates
-    return t
-end
-
-function InnerJoin:collectIUs()
+function AlgebraTree.InnerJoin:collectIUs()
     local res = {}
 
     for attrName, attrType in pairs(self.leftOperator:collectIUs()) do
@@ -24,7 +14,7 @@ function InnerJoin:collectIUs()
     return res
 end
 
-function InnerJoin:prepare(requiredAttributes, consumer)
+function AlgebraTree.InnerJoin:prepare(requiredAttributes, consumer)
     self.consumer = consumer
     self.requiredAttributes = copy(requiredAttributes)
 
@@ -67,7 +57,7 @@ function InnerJoin:prepare(requiredAttributes, consumer)
     end
 end
 
-function InnerJoin:produce(tupleType)
+function AlgebraTree.InnerJoin:produce(tupleType)
     local leftOperatorProduceCode = self.leftOperator:produce()
     local rightOperatorProduceCode = self.rightOperator:produce()
 
@@ -110,7 +100,7 @@ function InnerJoin:produce(tupleType)
     end)
 end
 
-function InnerJoin:consume(operator)
+function AlgebraTree.InnerJoin:consume(operator)
     -- generate consumer code
     local consumerCode = self.consumer:consume(self)
 

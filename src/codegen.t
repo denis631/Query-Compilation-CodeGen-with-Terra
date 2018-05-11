@@ -13,9 +13,9 @@ require 'operators.projection'
 require 'operators.inner-join'
 
 datastore = loadDatastore({
-        {'../data/tpcc/tpcc_customer.tbl', "customers"},
-        {'../data/tpcc/tpcc_order.tbl', "orders"},
-        {"../data/tpcc/tpcc_orderline.tbl", "orderlines"}
+        {'../data/tpcc_customer.tbl', "customers"},
+        {'../data/tpcc_order.tbl', "orders"},
+        {"../data/tpcc_orderline.tbl", "orderlines"}
 })
 
 --[=====[ Query ]]
@@ -34,25 +34,25 @@ c_d_id = 1
 --]=====]
 
 query =
-    Projection:new(
-        InnerJoin:new(
-            InnerJoin:new(
-                Selection:new(
-                    TableScan:new("customers"),
+    AlgebraTree.Projection(
+        AlgebraTree.InnerJoin(
+            AlgebraTree.InnerJoin(
+                AlgebraTree.Selection(
+                    AlgebraTree.TableScan("customers"),
                     {
                         { ["c_id"] = 322 },
                         { ["c_w_id"] = 1 },
                         { ["c_d_id"] = 1 }
                     }
                 ),
-                TableScan:new("orders"),
+                AlgebraTree.TableScan("orders"),
                 {
                     { ["c_w_id"] = "o_w_id" },
                     { ["c_d_id"] = "o_d_id" },
                     { ["c_id"] = "o_c_id"   }
                 }
             ),
-            TableScan:new("orderlines"),
+            AlgebraTree.TableScan("orderlines"),
             {
                 { ["o_w_id"] = "ol_w_id" },
                 { ["o_d_id"] = "ol_d_id" }

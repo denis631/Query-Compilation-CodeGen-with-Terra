@@ -1,25 +1,12 @@
--- Abstract class - Operator
-Operator = {}
+local asdl = require 'asdl'
+AlgebraTree = asdl.NewContext()
 
-function Operator:new()        -- constructor of instance
-   self.__index = self
-   return setmetatable({}, self)
-end
+AlgebraTree:Define [[
 
-function Operator:newChildClass()  -- constructor of subclass
-    self.__index = self
-    return setmetatable({ parentClass = self }, self)
- end
+    Root = Projection(Operator child, table requiredAttrs)
 
-function Operator:prepare()
-    self.child:prepare(self)
-end
-
-function Operator:collectIUs()
-    return self.child:collectIUs()
-end
-
- -- abstract methods
-function Operator:produce() end
-function Operator:consume(operator) end 
-
+    Operator = TableScan(string tableName)
+             | Selection(Operator child, table predicates)
+             | InnerJoin(Operator leftOperator, Operator rightOperator, table predicates)
+             # TODO: add Sort Operator -> param: ascending/descending
+]]

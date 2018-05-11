@@ -1,14 +1,5 @@
 -- Selection
-Selection = Operator:newChildClass()
-
-function Selection:new(child, predicates)
-    local t = TableScan.parentClass.new(self)
-    t.child = child
-    t.predicates = predicates
-    return t
-end
-
-function Selection:prepare(requiredAttributes, consumer)
+function AlgebraTree.Selection:prepare(requiredAttributes, consumer)
     self.consumer = consumer
     self.requiredAttributes = requiredAttributes
 
@@ -27,7 +18,11 @@ function Selection:prepare(requiredAttributes, consumer)
     self.symbolsMap = self.child.symbolsMap
 end
 
-function Selection:predicate()
+function AlgebraTree.Selection:collectIUs()
+    return self.child:collectIUs()
+end
+
+function AlgebraTree.Selection:predicate()
     local attrNames = {}
     local consts = {}
 
@@ -61,11 +56,11 @@ function Selection:predicate()
     end)
 end
 
-function Selection:produce(tupleType)
+function AlgebraTree.Selection:produce(tupleType)
     return self.child:produce()
 end
 
-function Selection:consume(operator)
+function AlgebraTree.Selection:consume(operator)
     -- generate consumer code
     local consumerCode = self.consumer:consume(self)
     local predicateCode = self:predicate()
