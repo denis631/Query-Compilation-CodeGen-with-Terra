@@ -1,4 +1,4 @@
-nextPowerOf2 = macro(function(val)
+snextPowerOf2 = macro(function(val)
         return quote
                 var v = val - 1
                 v = v or v >> 1
@@ -25,52 +25,6 @@ function equal(N)
 
         return quote [stmts] in [eq] end
     end)
-end
-
--- Vector
-function Vector(T)
-    local struct VectorT {
-        data: &T
-        count: uint32
-        capacity: uint32
-    }
-
-    terra VectorT:init()
-        self.count = 0
-        self.capacity = 32
-        self.data = [&T](C.calloc(self.capacity, sizeof(T)))
-    end
-
-    terra VectorT:push(val : T)
-        if self.count == self.capacity then
-            self.capacity = self.capacity * 2
-            var tmp = [&T](C.calloc(self.capacity, sizeof(T)))
-
-            for i = 0,(self.count-1) do
-                tmp[i] = self.data[i]
-            end
-
-            C.free(self.data)
-            self.data = tmp
-        end
-
-        self.data[self.count] = val
-        self.count = self.count + 1
-    end
-
-    terra VectorT:get(idx : int)
-        return self.data[idx]
-    end
-
-    terra VectorT:getPtr(idx : int)
-        return &self.data[idx]
-    end
-
-    terra VectorT:count()
-        return self.count
-    end
-
-    return VectorT
 end
 
 -- Implementation of "Lazy" MultiMap Hashing with Chaining
@@ -154,8 +108,6 @@ function HashTable(KeyT, ValueT)
     terra HashTableT:find(key : KeyT)
         var tableMask = self.tableSize - 1
         var idx = Hash(key) and tableMask
-
-        -- C.printf("idx: %d\n", idx)
 
         -- return iterator
         return Iterator { key, self.table[idx] }

@@ -20,7 +20,11 @@ terra Integer:equal(other : int32)
 end
 
 terra Integer:eq(other : Integer)
-    return self.value == other.value
+    return self:compare(other) == 0
+end
+
+terra Integer:compare(other: Integer)
+    return self.value - other.value
 end
 
 terra Integer:hash()

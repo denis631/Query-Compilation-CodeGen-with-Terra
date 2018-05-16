@@ -1,6 +1,6 @@
 -- Projection
 function AlgebraTree.Projection:prepare()
-    self.child:prepare(copy(self.requiredAttrs), self)
+    self.child:prepare(self.requiredAttrs, self)
 
     -- store the attribute symbols from the child
     self.symbolsMap = self.child.symbolsMap

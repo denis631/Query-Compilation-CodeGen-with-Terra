@@ -8,5 +8,7 @@ AlgebraTree:Define [[
     Operator = TableScan(string tableName)
              | Selection(Operator child, table predicates)
              | InnerJoin(Operator leftOperator, Operator rightOperator, table predicates)
-             # TODO: add Sort Operator -> param: ascending/descending
+             | Sort(Operator child, table sortedAttrs, SortOrder order)
+
+    SortOrder = Ascending | Descending
 ]]

@@ -5,8 +5,6 @@ function AlgebraTree.TableScan:prepare(requiredAttributes, consumer)
 
     -- generating attribute symbols
     for _, attrName in ipairs(requiredAttributes) do
-        -- TODO: not raw type but pointer type
-        -- TODO: sort Operator
         self.symbolsMap[attrName] = symbol(&datastoreIUs[attrName], attrName)
     end
 end
@@ -27,7 +25,9 @@ function AlgebraTree.TableScan:getAttributes()
 
         -- initialize symbol vars with row attributes
         for attrName, attrSymbol in pairs(self.symbolsMap) do
-            attributes:insert(quote var [attrSymbol] = &row.[attrName] end)
+            attributes:insert(quote var [attrSymbol] = &row.[attrName] 
+            -- C.printf("%s\n", row.[attrName]:toString())
+        end)
         end
 
         return quote [attributes] end
@@ -44,9 +44,10 @@ function AlgebraTree.TableScan:produce()
             -- access required table and it's count
             var table = datastore.[self.tableName]
 
-            for i = 0, datastore.[self.tableName .. "Count"] do
+            for i = 0, datastore.[self.tableName]:count() do
                 -- access required attributes
-                loadAttributesFrom(&table[i])
+                var tuple = table:getPtr(i)
+                loadAttributesFrom(tuple)
 
                 -- run consumer code
                 consumerCode()

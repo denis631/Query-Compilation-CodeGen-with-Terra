@@ -11,11 +11,12 @@ require 'operators.selection'
 require 'operators.tablescan'
 require 'operators.projection'
 require 'operators.inner-join'
+require 'operators.sort'
 
 datastore = loadDatastore({
-        {'../data/tpcc/tpcc_customer.tbl', "customers"},
-        {'../data/tpcc/tpcc_order.tbl', "orders"},
-        {"../data/tpcc/tpcc_orderline.tbl", "orderlines"}
+        {'../data/tpcc_customer.tbl', "customers"},
+        {'../data/tpcc_order.tbl', "orders"},
+        {"../data/tpcc_orderline.tbl", "orderlines"}
 })
 
 --[=====[ Query ]]
@@ -35,33 +36,26 @@ c_d_id = 1
 
 query =
     AlgebraTree.Projection(
-        AlgebraTree.InnerJoin(
-            AlgebraTree.InnerJoin(
-                AlgebraTree.Selection(
-                    AlgebraTree.TableScan("customers"),
-                    {
-                        { ["c_id"] = 322 },
-                        { ["c_w_id"] = 1 },
-                        { ["c_d_id"] = 1 }
-                    }
-                ),
-                AlgebraTree.TableScan("orders"),
+        AlgebraTree.Sort(
+            AlgebraTree.Selection(
+                AlgebraTree.TableScan("customers"),
                 {
-                    { ["c_w_id"] = "o_w_id" },
-                    { ["c_d_id"] = "o_d_id" },
-                    { ["c_id"] = "o_c_id"   }
+                    -- { ["c_id"] = 322 },
+                    -- { ["c_w_id"] = 1 },
+                    { ["c_d_id"] = 1 }
                 }
             ),
-            AlgebraTree.TableScan("orderlines"),
             {
-                { ["o_w_id"] = "ol_w_id" },
-                { ["o_d_id"] = "ol_d_id" }
-            }
+                "c_id"
+            },
+            AlgebraTree.Descending
         ),
         {
-            "c_first", "c_last", "ol_amount", "o_all_local"
+            "c_id", "c_first", "c_last"
         }
     )
+
+print(query)
 
 local x = os.clock()
 query:prepare()

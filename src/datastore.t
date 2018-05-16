@@ -2,14 +2,9 @@ require 'parser.parser'
 require 'schema.schema'
 
 struct Datastore {
-    customers : &Customer
-    customersCount : int
-
-    orders : &Order
-    ordersCount : int
-
-    orderlines : &Orderline
-    orderlinesCount : int
+    customers : Vector(Customer)
+    orders : Vector(Order)
+    orderlines : Vector(Orderline)
 }
 
 function loadDatastore(parseParams)
@@ -34,11 +29,16 @@ function parse(path, propertyName, datastore)
     local class = relationClassMap[propertyName]
 
     local init = terra()
-        -- set property count
-        datastore.[propertyName .. "Count"] = csvRowsCount
-        -- allocate array
-        datastore.[propertyName] = [&class](C.malloc(sizeof(class) * csvRowsCount))
+        -- init with known capacity
+        datastore.[propertyName]:initWithCapacity(csvRowsCount)
+        var tmp : relationClassMap[propertyName]
+
+        for i = 0,csvRowsCount do
+            -- push default values
+            datastore.[propertyName]:push(tmp)
+        end
     end
+
     init()
 
     local propertySetter = {}
@@ -49,7 +49,7 @@ function parse(path, propertyName, datastore)
 
         -- generate setter func
         propertySetter[fieldName] = terra(idx : int, param : fieldType.rawType)
-            datastore.[propertyName][idx].[fieldName]:init(param)
+            datastore.[propertyName]:getPtr(idx).[fieldName]:init(param)
         end
     end
 
@@ -69,17 +69,21 @@ function parse(path, propertyName, datastore)
     end
 end
 
+relationClassMap = {
+    ["customers"] = Customer,
+    ["orders"] = Order,
+    ["orderlines"] = Orderline
+}
+
 function collectDatastoreIUs()
     local ius = {}
 
-    for _, datastoreAttr in ipairs(Datastore.entries) do
-        if datastoreAttr["type"]:ispointer() then
-            for _,tuple in ipairs(datastoreAttr["type"].type.entries) do
-                local attrName = tuple["field"]
-                local attrType = tuple["type"]
+    for _,class in pairs(relationClassMap) do
+        for _,tuple in ipairs(class.entries) do
+            local attrName = tuple["field"]
+            local attrType = tuple["type"]
 
-                ius[attrName] = attrType
-            end
+            ius[attrName] = attrType
         end
     end
 
@@ -87,12 +91,6 @@ function collectDatastoreIUs()
 end
 
 datastoreIUs = collectDatastoreIUs()
-
-relationClassMap = {
-    ["customers"] = Customer,
-    ["orders"] = Order,
-    ["orderlines"] = Orderline
-}
 
 function castIfNecessary(fieldType, value)
     if fieldType == Integer or fieldType == Timestamp then

@@ -16,6 +16,14 @@ function Varchar(N)
         return C.strncmp(self.value, value, N) == 0
     end
 
+    terra VarcharT:eq(other : VarcharT)
+        return self:compare(other) == 0   
+    end
+
+    terra VarcharT:compare(other : VarcharT)
+        return C.strncmp(self.value, other.value, N)
+    end
+
     terra VarcharT:toString()
         return self.value
     end
