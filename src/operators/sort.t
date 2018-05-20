@@ -118,7 +118,7 @@ function AlgebraTree.Sort:consume(operator)
         local tuple = terralib.newlist()
 
         -- create tuple to insert in a vector
-         for _,attrName in ipairs(self.requiredAttrs) do
+        for _,attrName in ipairs(self.requiredAttrs) do
             local attrSym = self.symbolsMap[attrName]
             tuple:insert(quote in [attrSym] end)
         end

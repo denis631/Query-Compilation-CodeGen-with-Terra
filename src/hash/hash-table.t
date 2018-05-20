@@ -1,4 +1,4 @@
-snextPowerOf2 = macro(function(val)
+nextPowerOf2 = macro(function(val)
         return quote
                 var v = val - 1
                 v = v or v >> 1
@@ -52,6 +52,7 @@ function HashTable(KeyT, ValueT)
 
     terra HashTableT:init()
         self.data:init()
+        self.tableSize = 0
     end
 
     terra NodeT:init(key : KeyT, value : ValueT)
@@ -97,7 +98,7 @@ function HashTable(KeyT, ValueT)
             var idx = Hash(elem.key) and tableMask
 
             elem.next = self.table[idx]
-            self.table[idx] = self.data:getPtr(idx)
+            self.table[idx] = self.data:getPtr(i)
         end
     end
 
