@@ -21,7 +21,7 @@ function Vector(T)
             self.capacity = self.capacity * 2
             var tmp = [&T](C.calloc(self.capacity, sizeof(T)))
 
-            for i = 0,(self.count-1) do
+            for i = 0,self.count do
                 tmp[i] = self.data[i]
             end
 

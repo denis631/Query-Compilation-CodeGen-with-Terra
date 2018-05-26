@@ -94,11 +94,11 @@ function HashTable(KeyT, ValueT)
         var tableMask = self.tableSize - 1
 
         for i=0,numberOfEntries do
-            var elem = self.data:get(i)
+            var elem = self.data:getPtr(i)
             var idx = Hash(elem.key) and tableMask
 
             elem.next = self.table[idx]
-            self.table[idx] = self.data:getPtr(i)
+            self.table[idx] = elem
         end
     end
 
