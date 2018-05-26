@@ -5,6 +5,7 @@ struct Datastore {
     customers : Vector(Customer)
     orders : Vector(Order)
     orderlines : Vector(Orderline)
+    items : Vector(Item)
 }
 
 function loadDatastore(parseParams)
@@ -72,7 +73,8 @@ end
 relationClassMap = {
     ["customers"] = Customer,
     ["orders"] = Order,
-    ["orderlines"] = Orderline
+    ["orderlines"] = Orderline,
+    ["items"] = Item
 }
 
 function collectDatastoreIUs()

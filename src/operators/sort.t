@@ -14,10 +14,10 @@ function AlgebraTree.Sort:prepare(requiredAttrs, consumer)
             if attrName == sortAttrName then
                 exists = true
             end
+        end
 
-            if exists == false then
-                table.insert(self.requiredAttrs, attrName)
-            end
+        if exists == false then
+            table.insert(self.requiredAttrs, attrName)
         end
     end
 
@@ -69,7 +69,7 @@ function AlgebraTree.Sort:produce()
                             multiplier = -1
                         end
 
-                        stmts:insert(quote 
+                        stmts:insert(quote
                             var l = @a.["_"..(i-1)]
                             var r = @b.["_"..(i-1)]
 

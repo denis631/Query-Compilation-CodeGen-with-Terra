@@ -51,3 +51,11 @@ struct Orderline {
     ol_amount : Numeric(6, 2)
     ol_dist_info : Char(24)
 }
+
+struct Item {
+    i_id : Integer
+    i_im_id : Integer
+    i_name : Varchar(24)
+    i_price : Numeric(5, 2)
+    i_data : Varchar(50)
+}
