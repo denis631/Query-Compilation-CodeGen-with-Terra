@@ -12,7 +12,7 @@ end
 terra Integer:toString()
     var buffer: int8[10] -- max 11 digits (including -)
     C.sprintf(buffer, "%d", self.value)
-    return buffer
+    return &buffer[0]
 end
 
 terra Integer:equal(other : int32)

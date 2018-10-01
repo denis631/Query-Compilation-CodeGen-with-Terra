@@ -13,7 +13,7 @@ function Char(N)
     end
 
     terra CharT:toString()
-        return self.value
+        return &self.value[0]
     end
 
     return CharT

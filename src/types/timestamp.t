@@ -19,5 +19,5 @@ end
 terra Timestamp:toString()
     var buffer: int8[20] -- max 20 digits
     C.sprintf(buffer, "%lld", self.value)
-    return buffer
+    return &buffer[0]
 end

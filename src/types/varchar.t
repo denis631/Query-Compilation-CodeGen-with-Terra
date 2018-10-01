@@ -25,7 +25,7 @@ function Varchar(N)
     end
 
     terra VarcharT:toString()
-        return self.value
+        return &self.value[0]
     end
 
     return VarcharT

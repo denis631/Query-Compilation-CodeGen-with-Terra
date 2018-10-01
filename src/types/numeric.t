@@ -98,7 +98,7 @@ function Numeric(len, precision)
 
         var buffer: int8[32] -- max ?? digits (including -)
         C.sprintf(buffer, "%d.%d", upper, lower)
-        return buffer
+        return &buffer[0]
     end
 
     return NumericT

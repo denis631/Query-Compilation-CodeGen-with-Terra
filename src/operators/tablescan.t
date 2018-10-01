@@ -25,9 +25,7 @@ function AlgebraTree.TableScan:getAttributes()
 
         -- initialize symbol vars with row attributes
         for attrName, attrSymbol in pairs(self.symbolsMap) do
-            attributes:insert(quote var [attrSymbol] = &row.[attrName] 
-            -- C.printf("%s\n", row.[attrName]:toString())
-        end)
+            attributes:insert(quote var [attrSymbol] = &row.[attrName] end)
         end
 
         return quote [attributes] end
@@ -41,7 +39,7 @@ function AlgebraTree.TableScan:produce()
 
     return macro(function(datastore)
         return quote
-            -- access required table and it's count
+            -- access required table and its count
             var table = datastore.[self.tableName]
 
             for i = 0, datastore.[self.tableName]:count() do
