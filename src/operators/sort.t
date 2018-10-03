@@ -17,7 +17,7 @@ function AlgebraTree.Sort:prepare(requiredAttrs, consumer)
         end
 
         if exists == false then
-            table.insert(self.requiredAttrs, attrName)
+            table.insert(self.requiredAttrs, sortAttrName)
         end
     end
 

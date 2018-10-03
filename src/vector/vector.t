@@ -16,17 +16,21 @@ function Vector(T)
         self.data = [&T](C.calloc(self.capacity, sizeof(T)))
     end
 
+    terra VectorT:resize()
+        self.capacity = self.capacity * 2
+        var tmp = [&T](C.calloc(self.capacity, sizeof(T)))
+
+        for i = 0,self.count do
+            tmp[i] = self.data[i]
+        end
+
+        C.free(self.data)
+        self.data = tmp
+    end
+
     terra VectorT:push(val : T)
         if self.count == self.capacity then
-            self.capacity = self.capacity * 2
-            var tmp = [&T](C.calloc(self.capacity, sizeof(T)))
-
-            for i = 0,self.count do
-                tmp[i] = self.data[i]
-            end
-
-            C.free(self.data)
-            self.data = tmp
+            self:resize()
         end
 
         self.data[self.count] = val

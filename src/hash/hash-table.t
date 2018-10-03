@@ -1,16 +1,13 @@
-nextPowerOf2 = macro(function(val)
-        return quote
-                var v = val - 1
-                v = v or v >> 1
-                v = v or v >> 2
-                v = v or v >> 4
-                v = v or v >> 8
-                v = v or v >> 16
-                v = v + 1
-                in
-                v
-        end
-end)
+terra nextPowerOf2(val: uint32)
+    var v = val - 1
+    v = v or v >> 1
+    v = v or v >> 2
+    v = v or v >> 4
+    v = v or v >> 8
+    v = v or v >> 16
+    v = v + 1
+    return v
+end
 
 function equal(N)
     return macro(function(a,b)
@@ -69,16 +66,16 @@ function HashTable(KeyT, ValueT)
     end
 
     local Hash = macro(function(key)
-            local stmts = terralib.newlist()
-            local hashVal = symbol(uint32)
+        local stmts = terralib.newlist()
+        local hashVal = symbol(uint32)
 
-            stmts:insert(quote var [hashVal] = 0x9e3779b9 end)
+        stmts:insert(quote var [hashVal] = 0x9e3779b9 end)
 
-            for i = 0,(#KeyT.entries - 1) do
-                stmts:insert(quote [hashVal] = hashVal ^ key.["_"..i]:hash() end)
-            end
+        for i = 0,(#KeyT.entries - 1) do
+            stmts:insert(quote [hashVal] = hashVal ^ key.["_"..i]:hash() end)
+        end
 
-            return quote [stmts] in [hashVal] end
+        return quote [stmts] in [hashVal] end
     end)
 
     terra HashTableT:finalize()

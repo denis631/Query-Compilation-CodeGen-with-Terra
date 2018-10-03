@@ -96,7 +96,7 @@ queries = {
                     }
                 ),
                 {
-                    "o_id"
+                    "c_id", "o_id"
                 },
                 AlgebraTree.Ascending
             ),
