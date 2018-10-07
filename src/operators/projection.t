@@ -17,28 +17,17 @@ function AlgebraTree.Projection:produce()
     end
 end
 
-function AlgebraTree.Projection:printAttributes()
-  return macro(function()
-      local stringAttributes = terralib.newlist()
-
-      -- stringify the attributes
-      for _, attrName in ipairs(self.requiredAttrs) do
-          stringAttributes:insert(quote C.printf("%s | ", [&int8]([self.symbolsMap[attrName]]:toString())) end)
-      end
-
-      stringAttributes:insert(quote C.printf("\n") end)
-
-      -- First half of the list is implicitly filled with passed arguments, this is why we remove it
-      return quote [stringAttributes] end
-  end)
-end
-
 function AlgebraTree.Projection:consume(operator)
-    local printify = self:printAttributes()
-
     return macro(function()
-        return quote
-            printify()
+        local stringAttributes = terralib.newlist()
+
+        -- print all required attributes
+        for _, attrName in ipairs(self.requiredAttrs) do
+            stringAttributes:insert(quote C.printf("%s | ", [&int8]([self.symbolsMap[attrName]]:toString())) end)
         end
+
+        stringAttributes:insert(quote C.printf("\n") end)
+
+        return quote [stringAttributes] end
     end)
 end
