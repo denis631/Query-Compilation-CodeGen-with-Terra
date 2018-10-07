@@ -65,7 +65,8 @@ function AlgebraTree.Sort:produce()
                     if attrName == sortAttrName then
 
                         local multiplier = 1
-                        if self.order.kind == "Descending" then
+
+                        if self.order == AlgebraTree.Descending then
                             multiplier = -1
                         end
 
