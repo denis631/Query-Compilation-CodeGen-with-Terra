@@ -1,6 +1,6 @@
 -- Sort
 function AlgebraTree.Sort:collectIUs()
-    return self.child:collectIUs()
+    return self.producer:collectIUs()
 end
 
 function AlgebraTree.Sort:prepare(requiredAttrs, consumer)
@@ -21,14 +21,64 @@ function AlgebraTree.Sort:prepare(requiredAttrs, consumer)
         end
     end
 
-    self.child:prepare(self.requiredAttrs, self)
+    self.producer:prepare(self.requiredAttrs, self)
 
     -- copy generated symbols
-    self.symbolsMap = self.child.symbolsMap
+    self.symbolsMap = self.producer.symbolsMap
+end
+
+function AlgebraTree.Sort:comparator()
+    return macro(function(a,b) 
+        local stmts = terralib.newlist()
+
+        local eval = symbol(int)
+        stmts:insert(quote var [eval] = 0 end)
+
+        for i,attrName in ipairs(self.requiredAttrs) do
+            for _,sortAttrName in ipairs(self.sortedAttrs) do
+                if attrName == sortAttrName then
+
+                    local multiplier = 1
+
+                    if self.order == AlgebraTree.Descending then
+                        multiplier = -1
+                    end
+
+                    stmts:insert(quote
+                        var l = @a.["_"..(i-1)]
+                        var r = @b.["_"..(i-1)]
+
+                        var comp = l:compare(r)
+
+                        if [eval] == 0 then
+                            [eval] = multiplier * comp
+                        end
+                    end)
+                end
+            end
+        end
+
+        return quote [stmts] in [eval] end
+    end)
+end
+
+function AlgebraTree.Sort:unpackAttributes()
+    return macro(function(item)
+        local stmts = terralib.newlist()
+        local i = 0
+
+        for _,attrName in ipairs(self.requiredAttrs) do
+            local attrSym = self.symbolsMap[attrName]
+            stmts:insert(quote var [attrSym] = item.["_"..i] end)
+            i = i + 1
+        end
+
+        return quote [stmts] end
+    end)
 end
 
 function AlgebraTree.Sort:produce()
-    local producerCode = self.child:produce()
+    local producerCode = self.producer:produce()
     local consumerCode = self.consumer:consume(self)
 
     return macro(function(datastore)
@@ -41,56 +91,10 @@ function AlgebraTree.Sort:produce()
         local vectorDataTerraT = tuple(unpack(vectorDataT))
         self.vectorSym = symbol(Vector(vectorDataTerraT))
 
-        local produceSymbols = macro(function(item)
-            local stmts = terralib.newlist()
-            local i = 0
-
-            for _,attrName in ipairs(self.requiredAttrs) do
-                local attrSym = self.symbolsMap[attrName]
-                stmts:insert(quote var [attrSym] = item.["_"..i] end)
-                i = i + 1
-            end
-
-            return quote [stmts] end
-        end)
-
-        local comparator = macro(function(a,b) 
-            local stmts = terralib.newlist()
-
-            local eval = symbol(int)
-            stmts:insert(quote var [eval] = 0 end)
-
-            for i,attrName in ipairs(self.requiredAttrs) do
-                for _,sortAttrName in ipairs(self.sortedAttrs) do
-                    if attrName == sortAttrName then
-
-                        local multiplier = 1
-
-                        if self.order == AlgebraTree.Descending then
-                            multiplier = -1
-                        end
-
-                        stmts:insert(quote
-                            var l = @a.["_"..(i-1)]
-                            var r = @b.["_"..(i-1)]
-
-                            var comp = l:compare(r)
-
-                            if [eval] == 0 then
-                                [eval] = multiplier * comp
-                            end
-                        end)
-                    end
-                end
-            end
-
-            return quote [stmts] in [eval] end
-        end)
-
         local comparatorFunc = terra(a : &opaque, b : &opaque)
             var left = [&vectorDataTerraT](a)
             var right = [&vectorDataTerraT](b)
-            return [comparator](left, right)
+            return [self:comparator()](left, right)
         end
 
         return quote
@@ -106,8 +110,8 @@ function AlgebraTree.Sort:produce()
 
             for idx = 0,[self.vectorSym]:count() do
                 -- produce symbols by unpacking them from vector tuple
-                var item = [self.vectorSym]:get(idx)
-                [produceSymbols](item)
+                var item = [self.vectorSym]:getPtr(idx)
+                [self:unpackAttributes()](item)
                 consumerCode()
             end
         end

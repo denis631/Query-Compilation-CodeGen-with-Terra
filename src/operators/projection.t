@@ -1,17 +1,17 @@
 -- Projection
 function AlgebraTree.Projection:prepare()
-    self.child:prepare(self.requiredAttrs, self)
+    self.producer:prepare(self.requiredAttrs, self)
 
-    -- store the attribute symbols from the child
-    self.symbolsMap = self.child.symbolsMap
+    -- store the attribute symbols from the producer(child)
+    self.symbolsMap = self.producer.symbolsMap
 end
 
 function AlgebraTree.Projection:collectIUs()
-    return self.child:collectIUs()
+    return self.producer:collectIUs()
 end
 
 function AlgebraTree.Projection:produce()
-    local produceCode = self.child:produce()
+    local produceCode = self.producer:produce()
     return terra(datastore : &Datastore)
         produceCode(datastore)
     end

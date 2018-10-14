@@ -19,13 +19,13 @@ function AlgebraTree.TableScan:collectIUs()
     return ius
 end
 
-function AlgebraTree.TableScan:getAttributes()
-    return macro(function(row)
+function AlgebraTree.TableScan:unpackAttributes()
+    return macro(function(tuple)
         local attributes = terralib.newlist()
 
         -- initialize symbol vars with row attributes
         for attrName, attrSymbol in pairs(self.symbolsMap) do
-            attributes:insert(quote var [attrSymbol] = &row.[attrName] end)
+            attributes:insert(quote var [attrSymbol] = &tuple.[attrName] end)
         end
 
         return quote [attributes] end
@@ -35,17 +35,17 @@ end
 function AlgebraTree.TableScan:produce()
     -- generating consumer code and load attributes code
     local consumerCode = self.consumer:consume(self)
-    local loadAttributesFrom = self:getAttributes()
+    local unpackAttributesCode = self:unpackAttributes()
 
     return macro(function(datastore)
         return quote
-            -- access required table and its count
+            -- access required table
             var table = datastore.[self.tableName]
 
             for i = 0, datastore.[self.tableName]:count() do
                 -- access required attributes
                 var tuple = table:getPtr(i)
-                loadAttributesFrom(tuple)
+                unpackAttributesCode(tuple)
 
                 -- run consumer code
                 consumerCode()

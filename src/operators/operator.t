@@ -3,11 +3,11 @@ AlgebraTree = asdl.NewContext()
 
 AlgebraTree:Define [[
 
-    Operator = Projection(Operator child, table requiredAttrs)
+    Operator = Projection(Operator producer, table requiredAttrs)
              | TableScan(string tableName)
-             | Selection(Operator child, table predicates)
+             | Selection(Operator producer, table predicates)
              | InnerJoin(Operator leftOperator, Operator rightOperator, table predicates)
-             | Sort(Operator child, table sortedAttrs, SortOrder order)
+             | Sort(Operator producer, table sortedAttrs, SortOrder order)
 
     SortOrder = Ascending | Descending
 ]]

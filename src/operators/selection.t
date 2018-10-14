@@ -3,23 +3,23 @@ function AlgebraTree.Selection:prepare(requiredAttributes, consumer)
     self.consumer = consumer
     self.requiredAttributes = requiredAttributes
 
-    local childRequiredAttributes= copy(requiredAttributes)
+    local producerRequiredAttributes= copy(requiredAttributes)
 
     for _, predicate in ipairs(self.predicates) do
         for attrName, _ in pairs(predicate) do
-            if childRequiredAttributes[attrName] == nil then
-                table.insert(childRequiredAttributes, attrName)
+            if producerRequiredAttributes[attrName] == nil then
+                table.insert(producerRequiredAttributes, attrName)
             end
         end
     end
 
-    self.child:prepare(childRequiredAttributes, self)
+    self.producer:prepare(producerRequiredAttributes, self)
 
-    self.symbolsMap = self.child.symbolsMap
+    self.symbolsMap = self.producer.symbolsMap
 end
 
 function AlgebraTree.Selection:collectIUs()
-    return self.child:collectIUs()
+    return self.producer:collectIUs()
 end
 
 function AlgebraTree.Selection:predicate()
@@ -43,9 +43,9 @@ function AlgebraTree.Selection:predicate()
 
     return macro(function()
         -- evaluate all the predicates
-        for i = 0,(#self.predicates - 1) do
-            local attrName = attrNames[i+1]
-            local const = consts[i+1]
+        for i = 1,(#self.predicates) do
+            local attrName = attrNames[i]
+            local const = consts[i]
 
             predicateEval:insert(quote
                 [predicateStatus] = [predicateStatus] and (@[self.symbolsMap[attrName]]):equal(const)
@@ -57,11 +57,10 @@ function AlgebraTree.Selection:predicate()
 end
 
 function AlgebraTree.Selection:produce(tupleType)
-    return self.child:produce()
+    return self.producer:produce()
 end
 
 function AlgebraTree.Selection:consume(operator)
-    -- generate consumer code
     local consumerCode = self.consumer:consume(self)
     local predicateCode = self:predicate()
 

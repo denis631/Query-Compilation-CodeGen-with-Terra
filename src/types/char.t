@@ -12,6 +12,18 @@ function Char(N)
         self.length = C.strnlen(self.value, N);
     end
 
+    terra CharT:equal(value : rawstring)
+        return C.strncmp(self.value, value, N) == 0
+    end
+
+    terra CharT:eq(other : CharT)
+        return self:compare(other) == 0   
+    end
+
+    terra CharT:compare(other : CharT)
+        return C.strncmp(self.value, other.value, N)
+    end
+
     terra CharT:toString()
         return &self.value[0]
     end
