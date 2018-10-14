@@ -13,7 +13,7 @@ require 'operators.operator'
 require 'operators.selection'
 require 'operators.tablescan'
 require 'operators.projection'
-require 'operators.inner-join'
+require 'operators.hash-join'
 require 'operators.sort'
 
 datastore = loadDatastore({
@@ -81,7 +81,7 @@ select c_last, o_id
 queries = {
         ["SORT"] = AlgebraTree.Projection(
             AlgebraTree.Sort(
-                AlgebraTree.InnerJoin(
+                AlgebraTree.HashJoin(
                     AlgebraTree.Selection(
                         AlgebraTree.TableScan("customers"),
                         {
@@ -106,8 +106,8 @@ queries = {
         ),
 
         ["SELECT+3JOINS"] =  AlgebraTree.Projection(
-            AlgebraTree.InnerJoin(
-                AlgebraTree.InnerJoin(
+            AlgebraTree.HashJoin(
+                AlgebraTree.HashJoin(
                     AlgebraTree.TableScan("customers"),
                     AlgebraTree.TableScan("orders"),
                     {
@@ -116,7 +116,7 @@ queries = {
                         { ["c_w_id"] = "o_w_id" }
                     }
                 ),
-                AlgebraTree.InnerJoin(
+                AlgebraTree.HashJoin(
                     AlgebraTree.Selection(
                         AlgebraTree.TableScan("orderlines"),
                         {
@@ -140,7 +140,7 @@ queries = {
         ),
 
         ["SELECT+JOIN"] = AlgebraTree.Projection(
-            AlgebraTree.InnerJoin(
+            AlgebraTree.HashJoin(
                 AlgebraTree.Selection(
                     AlgebraTree.TableScan("orderlines"),
                     {
