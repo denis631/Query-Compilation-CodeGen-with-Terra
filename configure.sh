@@ -12,6 +12,7 @@ DataDIR="$(echo "$DIR/data")"
 TerraDIR="$(echo "$DIR/terra")"
 DataURL="https://db.in.tum.de/teaching/ws1718/imlab/tpcc_5w.tar.gz"
 
+mkdir -p $DataDIR
 mkdir -p $TerraDIR
 
 echo "Downloading Terra sources ..."

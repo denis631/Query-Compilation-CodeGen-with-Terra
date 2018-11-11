@@ -1,4 +1,6 @@
-terralib.includepath = "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/;..;"
+if io.popen("uname","r"):read("*a") == "Darwin\n" then
+    terralib.includepath = "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/;..;"
+end
 
 C = terralib.includecstring [[
     #include <stdio.h>
@@ -17,95 +19,51 @@ require 'operators.hash-join'
 require 'operators.sort'
 
 datastore = loadDatastore({
-        {'../data/tpcc/tpcc_customer.tbl', "customers"},
-        -- {'../data/tpcc/tpcc_order.tbl', "orders"},
-        -- {"../data/tpcc/tpcc_orderline.tbl", "orderlines"},
-        -- {"../data/tpcc/tpcc_item.tbl", "items"}
+    {"../data/tpcc_5w/tpcc_customer.tbl", "customers"},
+    {"../data/tpcc_5w/tpcc_order.tbl", "orders"},
+    {"../data/tpcc_5w/tpcc_orderline.tbl", "orderlines"},
+    {"../data/tpcc_5w/tpcc_item.tbl", "items"}
 })
 
 function benchmark(f, ...)
-    local reps = 10
+    local reps = 1
     local s = os.clock()
     for i=1,reps do
         f(...)
     end
     local average = (os.clock() - s) / reps
-    print(string.format("average time %.6f seconds\n", average))
+    print(string.format("time: %.6f seconds\n", average))
 end
 
---[=====[Select query]]
-select c_id, c_first, c_middle, c_last
-from customer
-where c_last = 'BARBARBAR';
---]=====]
-
---[=====[SELECT+JOIN]]
-select o_id, ol_dist_info
-from order, orderline
-where o_id = ol_o_id
-    and o_d_id = ol_d_id
-    and o_w_id = ol_w_id
-    and ol_number = 1
-    and ol_o_id = 100;
---]=====]
-
---[=====[SELECT + 3 JOINS]]
-select c_last, o_id, i_id, ol_dist_info
-from customer, order, orderline, item
-where c_id = o_c_id
-    and c_d_id = o_d_id
-    and c_w_id = o_w_id
-
-    and o_id = ol_o_id
-    and o_d_id = ol_d_id
-    and o_w_id = ol_w_id
-
-    and ol_number = 1
-    and ol_o_id = 100
-
-    and ol_i_id = i_id;
---]=====]
-
---[=====[SORT]]
-select c_last, o_id
-    from customer, order
-    where c_id = o_c_id
-    and c_d_id = o_d_id
-    and c_w_id = o_w_id
-
-    and c_id = 100
-
-    sort by c_id, o_id
---]=====]
-
 queries = {
-        ["SORT"] = AlgebraTree.Projection(
-            AlgebraTree.Sort(
-                AlgebraTree.HashJoin(
-                    AlgebraTree.Selection(
-                        AlgebraTree.TableScan("customers"),
-                        {
-                            { ["c_id"] = 100 }
-                        }
-                    ),
-                    AlgebraTree.TableScan("orders"),
+    ["SORT"] = AlgebraTree.Projection(
+        AlgebraTree.Sort(
+            AlgebraTree.HashJoin(
+                AlgebraTree.Selection(
+                    AlgebraTree.TableScan("customers"),
                     {
-                        { ["c_id"] = "o_c_id" },
-                        { ["c_d_id"] = "o_d_id" },
-                        { ["c_w_id"] = "o_w_id" }
+                        { ["c_id"] = 100 }
                     }
                 ),
+                AlgebraTree.TableScan("orders"),
                 {
-                    "c_id", "o_id"
-                },
-                AlgebraTree.Ascending
+                    { ["c_id"] = "o_c_id" },
+                    { ["c_d_id"] = "o_d_id" },
+                    { ["c_w_id"] = "o_w_id" }
+                }
             ),
             {
-                "c_last", "o_id"
-            }
+                "c_id", "o_id"
+            },
+            AlgebraTree.Ascending
         ),
+        {
+            "c_last", "o_id"
+        }
+    ),
 
-        ["SELECT+3JOINS"] =  AlgebraTree.Projection(
+    ["SELECT+3JOINS"] =  AlgebraTree.Projection(
+        AlgebraTree.HashJoin(
             AlgebraTree.HashJoin(
                 AlgebraTree.HashJoin(
                     AlgebraTree.TableScan("customers"),
@@ -116,31 +74,6 @@ queries = {
                         { ["c_w_id"] = "o_w_id" }
                     }
                 ),
-                AlgebraTree.HashJoin(
-                    AlgebraTree.Selection(
-                        AlgebraTree.TableScan("orderlines"),
-                        {
-                            { ["ol_number"] = 1 },
-                            { ["ol_o_id"] = 100 }
-                        }
-                    ),
-                    AlgebraTree.TableScan("items"),
-                    {
-                        { ["ol_i_id"] = "i_id" }
-                    }
-                ),
-                {
-                    { ["o_id"] = "ol_o_id" },
-                    { ["o_d_id"] = "ol_d_id" },
-                    { ["o_w_id"] = "ol_w_id" }
-            }),
-            {
-                "c_last", "o_id", "i_id", "ol_dist_info"
-            }
-        ),
-
-        ["SELECT+JOIN"] = AlgebraTree.Projection(
-            AlgebraTree.HashJoin(
                 AlgebraTree.Selection(
                     AlgebraTree.TableScan("orderlines"),
                     {
@@ -148,49 +81,99 @@ queries = {
                         { ["ol_o_id"] = 100 }
                     }
                 ),
-                AlgebraTree.TableScan("orders"),
                 {
-                    { ["ol_d_id"] = "o_d_id" },
-                    { ["ol_w_id"] = "o_w_id" },
-                    { ["ol_o_id"] = "o_id" }
+                    { ["o_id"] = "ol_o_id" },
+                    { ["o_d_id"] = "ol_d_id" },
+                    { ["o_w_id"] = "ol_w_id" }
                 }
             ),
+            AlgebraTree.TableScan("items"),
             {
-                "o_id", "ol_dist_info"
+                { ["ol_i_id"] = "i_id" }
             }
         ),
+        {
+            "c_last", "o_id", "i_id", "ol_dist_info"
+        }
+    ),
 
-        ["SELECT"] = AlgebraTree.Projection(
-            AlgebraTree.Selection(
-                AlgebraTree.TableScan("customers"),
+    ["SELECT+JOIN"] = AlgebraTree.Projection(
+        AlgebraTree.HashJoin(
+            AlgebraTree.TableScan("customers"),
+            AlgebraTree.HashJoin(
+                AlgebraTree.TableScan("orders"),
+                AlgebraTree.Selection(
+                    AlgebraTree.TableScan("orderlines"),
+                    {
+                        { ["ol_number"] = 1 },
+                        { ["ol_o_id"] = 100 }
+                    }
+                ),
                 {
-                    { ["c_last"] = "BARBARBAR" }
+                    { ["o_d_id"] = "ol_d_id" },
+                    { ["o_w_id"] = "ol_w_id" },
+                    { ["o_id"] = "ol_o_id" }
                 }
             ),
             {
-                "c_id", "c_first", "c_middle", "c_last"
+                { ["c_id"] = "o_c_id"}
             }
-        )
+        ),
+        {
+            "c_last", "o_id", "ol_dist_info"
+        }
+    ),
+
+    ["SELECT"] = 
+    AlgebraTree.Projection(
+        AlgebraTree.Selection(
+            AlgebraTree.TableScan("customers"),
+            {
+                { ["c_last"] = "BARBARBAR" }
+            }
+        ),
+        {
+            "c_id", "c_first", "c_middle", "c_last"
+        }
+    )
 }
 
-query = queries["SELECT"]
+keys = {}
+keys[1] = "SELECT"
+keys[2] = "SELECT+JOIN"
+keys[3] = "SELECT+3JOINS"
+keys[4] = "SORT"
 
--- time = benchmark(function()
---     query:prepare()
---     local code = query:produce()
---     code:getpointer()
---     code(datastore)
--- end)
+readInput = function()
+    print("-------------------")
+    print("Enter integer corresponding to index of the query you want to execute")
+    print("1: Select")
+    print("2: Select + Join")
+    print("3: Select + 3 Joins")
+    print("4: Sort")
+    return tonumber(io.read())
+end
 
-local x = os.clock()
-query:prepare()
-code = query:produce()
-code:getpointer()
-print(string.format("query code generated in %.6f seconds\n", os.clock() - x))
+idx = readInput()
+while idx >= 1 and idx <= 4 do
+    query = queries[keys[idx]]
 
--- store query exec code as LLVM IR
-terralib.saveobj("main.ll", "llvmir", {main = code})
---print(string.format("query code generated and stored as LLVM IR in %.6f seconds\n", os.clock() - x))
+    query:prepare()
+    code = query:produce()
 
-print(code)
-code(datastore)
+    benchmark(function()
+        code:getpointer()
+    end)
+
+    -- store query exec code as LLVM IR
+    -- terralib.saveobj("main.ll", "llvmir", {main = code})
+    -- print(string.format("query code generated and stored as LLVM IR in %.6f seconds\n", os.clock() - x))
+
+    print(code)
+
+    benchmark(function()
+        code(datastore)
+    end)
+
+    idx = readInput()
+end
