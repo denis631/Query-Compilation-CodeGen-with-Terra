@@ -17,3 +17,13 @@ function copy(tab)
 
     return res
 end
+
+function benchmark(f, ...)
+    local reps = 1
+    local s = os.clock()
+    for i=1,reps do
+        f(...)
+    end
+    local average = (os.clock() - s) / reps
+    print(string.format("time: %.6f seconds\n", average))
+end
