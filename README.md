@@ -2,7 +2,7 @@
 
 This is in-memory database project developed as a POC for my bachelor thesis.
 
-The purpose of the project is to utilize [Terra](http://terralang.org) multistaging ability in order to compile a given SQL query into LLVM for compilation speed, readability and performance.
+The purpose of the project is to utilize [Terra](http://terralang.org) multistaging ability in order to compile a given SQL query algebra plan (SQL AST) into native code for compilation speed, readability and performance.
 
 The query compilation model is data-centric, as described in [Efficiently Compiling Efficient Query Plans for Modern Hardware](http://www.vldb.org/pvldb/vol4/p539-neumann.pdf)
 
